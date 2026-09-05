@@ -1,0 +1,143 @@
+{
+  "users": [
+    {
+      "id": "user-admin",
+      "name": "Admin User",
+      "email": "admin@visa.com",
+      "password": "admin123",
+      "role": "admin"
+    },
+    {
+      "id": "user-agent1",
+      "name": "Priya Sharma",
+      "email": "priya@visa.com",
+      "password": "agent123",
+      "role": "agent"
+    },
+    {
+      "id": "user-agent2",
+      "name": "Rahul Khan",
+      "email": "rahul@visa.com",
+      "password": "agent123",
+      "role": "agent"
+    }
+  ],
+  "leads": [
+    {
+      "id": "lead-1",
+      "name": "Amit Patel",
+      "phone": "+919876543210",
+      "email": "amit.patel@gmail.com",
+      "city": "Mumbai",
+      "visa_type": "student",
+      "source": "facebook",
+      "status": "interested",
+      "assigned_to": "user-agent1",
+      "next_follow_up_at": "2026-09-01T10:00:00.000Z",
+      "notes": "Wants student visa for Canada. Has IELTS 6.5.",
+      "created_at": "2026-08-28T09:00:00.000Z",
+      "updated_at": "2026-08-30T14:00:00.000Z"
+    },
+    {
+      "id": "lead-2",
+      "name": "Sneha Reddy",
+      "phone": "+919123456789",
+      "email": "sneha.r@yahoo.com",
+      "city": "Hyderabad",
+      "visa_type": "visit",
+      "source": "justdial",
+      "status": "new",
+      "assigned_to": "user-agent2",
+      "next_follow_up_at": "2026-09-01T11:00:00.000Z",
+      "notes": "Family visit to UK for 2 weeks.",
+      "created_at": "2026-08-31T08:30:00.000Z",
+      "updated_at": "2026-08-31T08:30:00.000Z"
+    },
+    {
+      "id": "lead-3",
+      "name": "Vikram Singh",
+      "phone": "+919988776655",
+      "email": "vikram.singh@outlook.com",
+      "city": "Delhi",
+      "visa_type": "business",
+      "source": "website",
+      "status": "contacted",
+      "assigned_to": "user-agent1",
+      "next_follow_up_at": "2026-08-30T16:00:00.000Z",
+      "notes": "Business visa for Germany trade fair.",
+      "created_at": "2026-08-27T11:00:00.000Z",
+      "updated_at": "2026-08-29T10:00:00.000Z"
+    },
+    {
+      "id": "lead-4",
+      "name": "Fatima Ali",
+      "phone": "+919555444333",
+      "email": "fatima.ali@gmail.com",
+      "city": "Bangalore",
+      "visa_type": "student",
+      "source": "instagram",
+      "status": "documents_pending",
+      "assigned_to": "user-agent2",
+      "next_follow_up_at": "2026-09-02T09:00:00.000Z",
+      "notes": "Australia student visa. Waiting for offer letter.",
+      "created_at": "2026-08-25T13:00:00.000Z",
+      "updated_at": "2026-08-31T16:00:00.000Z"
+    },
+    {
+      "id": "lead-5",
+      "name": "Rajesh Kumar",
+      "phone": "+919777888999",
+      "email": "rajesh.k@hotmail.com",
+      "city": "Chennai",
+      "visa_type": "visit",
+      "source": "referral",
+      "status": "won",
+      "assigned_to": "user-agent1",
+      "next_follow_up_at": null,
+      "notes": "US tourist visa approved.",
+      "created_at": "2026-08-10T10:00:00.000Z",
+      "updated_at": "2026-08-20T12:00:00.000Z"
+    },
+    {
+      "id": "lead-6",
+      "name": "Deepa Nair",
+      "phone": "+919666555444",
+      "email": "deepa.nair@gmail.com",
+      "city": "Kochi",
+      "visa_type": "business",
+      "source": "google_ads",
+      "status": "lost",
+      "assigned_to": "user-agent2",
+      "next_follow_up_at": null,
+      "notes": "Chose another consultant.",
+      "created_at": "2026-08-15T09:00:00.000Z",
+      "updated_at": "2026-08-22T11:00:00.000Z"
+    }
+  ],
+  "activities": [
+    {
+      "id": "act-1",
+      "lead_id": "lead-1",
+      "user_id": "user-agent1",
+      "type": "call",
+      "description": "Called — spoke for 10 mins. Interested in Canada intake Jan 2027.",
+      "created_at": "2026-08-30T14:00:00.000Z"
+    },
+    {
+      "id": "act-2",
+      "lead_id": "lead-3",
+      "user_id": "user-agent1",
+      "type": "call",
+      "description": "No answer. Left WhatsApp message.",
+      "created_at": "2026-08-29T10:00:00.000Z"
+    },
+    {
+      "id": "act-3",
+      "lead_id": "lead-4",
+      "user_id": "user-agent2",
+      "type": "note",
+      "description": "Sent document checklist via email.",
+      "created_at": "2026-08-31T16:00:00.000Z"
+    }
+  ]
+}

@@ -1,36 +1,55 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Visa CRM
 
-## Getting Started
+Simple web CRM for visa consultancies — track leads, follow-ups, and conversions.
 
-First, run the development server:
+## Features (Phase 1)
+
+- **Dashboard** — stats, charts by source/visa type/status, follow-ups due, recent leads
+- **Lead management** — create, edit, search, filter by visa type, source, status
+- **Follow-ups** — today's calls, overdue list, click-to-call
+- **Activity log** — log calls and notes per lead
+- **Team login** — Admin sees all leads; Agents see assigned leads only
+
+## Quick start
 
 ```bash
+cd visa-crm
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Demo accounts
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Role  | Email           | Password  |
+|-------|-----------------|-----------|
+| Admin | admin@visa.com  | admin123  |
+| Agent | priya@visa.com  | agent123  |
 
-## Learn More
+## Visa types
 
-To learn more about Next.js, take a look at the following resources:
+- Visit Visa
+- Student Visa
+- Business Visa
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Lead sources
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+JustDial, Facebook, Instagram, Google Ads, Website, Walk-in, Referral, Phone Call, Other
 
-## Deploy on Vercel
+## Data storage
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Phase 1 uses a local JSON file at `data/db.json` (auto-seeded from `data/seed.json` on first run).
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+For cloud deployment, see `supabase/schema.sql` to migrate to Supabase PostgreSQL.
+
+## Pages
+
+| Page        | URL              |
+|-------------|------------------|
+| Login       | `/login`         |
+| Dashboard   | `/dashboard`     |
+| All Leads   | `/leads`         |
+| Add Lead    | `/leads/new`     |
+| Lead Detail | `/leads/[id]`    |
+| Follow-ups  | `/follow-ups`    |
