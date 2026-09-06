@@ -1,14 +1,12 @@
 export type VisaType = "visit" | "student" | "business";
 
 export type LeadSource =
+  | "meta"
   | "justdial"
-  | "facebook"
-  | "instagram"
+  | "walk_in"
   | "google_ads"
   | "website"
-  | "walk_in"
   | "referral"
-  | "phone_call"
   | "other";
 
 export type LeadStatus =
@@ -30,8 +28,10 @@ export interface User {
   id: string;
   name: string;
   email: string;
+  phone: string;
   password: string;
   role: UserRole;
+  joined_at: string;
 }
 
 export interface Lead {

@@ -7,15 +7,21 @@ export const VISA_TYPES: { value: VisaType; label: string }[] = [
 ];
 
 export const LEAD_SOURCES: { value: LeadSource; label: string }[] = [
+  { value: "meta", label: "Meta" },
   { value: "justdial", label: "JustDial" },
-  { value: "facebook", label: "Facebook" },
-  { value: "instagram", label: "Instagram" },
+  { value: "walk_in", label: "Walk-in" },
   { value: "google_ads", label: "Google Ads" },
   { value: "website", label: "Website" },
-  { value: "walk_in", label: "Walk-in" },
-  { value: "referral", label: "Referral" },
-  { value: "phone_call", label: "Phone Call" },
   { value: "other", label: "Other" },
+];
+
+export const DASHBOARD_SOURCES: { value: LeadSource; label: string }[] = [
+  { value: "justdial", label: "Just Dial" },
+  { value: "meta", label: "Meta" },
+  { value: "google_ads", label: "Google Ads" },
+  { value: "website", label: "Website" },
+  { value: "other", label: "Other" },
+  { value: "referral", label: "Referral" },
 ];
 
 export const MARITAL_STATUSES: { value: MaritalStatus; label: string }[] = [
@@ -37,7 +43,18 @@ export const LEAD_STATUSES: { value: LeadStatus; label: string; color: string }[
 ];
 
 export function labelForSource(source: string): string {
-  return LEAD_SOURCES.find((s) => s.value === source)?.label ?? source;
+  return (
+    LEAD_SOURCES.find((s) => s.value === source)?.label ??
+    DASHBOARD_SOURCES.find((s) => s.value === source)?.label ??
+    source
+  );
+}
+
+export function bucketSourceForDashboard(source: string): LeadSource {
+  if (source === "facebook" || source === "instagram") return "meta";
+  if (source === "walk_in" || source === "phone_call") return "other";
+  if (DASHBOARD_SOURCES.some((s) => s.value === source)) return source as LeadSource;
+  return "other";
 }
 
 export function labelForVisaType(type: string): string {

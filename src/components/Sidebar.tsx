@@ -8,12 +8,14 @@ import {
   PhoneCall,
   LogOut,
   Globe,
+  UserCircle,
 } from "lucide-react";
 import type { SessionUser } from "@/lib/types";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/leads", label: "All Leads", icon: Users },
+  { href: "/agents", label: "Agents", icon: UserCircle },
   { href: "/follow-ups", label: "Follow-ups", icon: PhoneCall },
 ];
 

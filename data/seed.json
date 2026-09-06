@@ -4,22 +4,28 @@
       "id": "user-admin",
       "name": "Admin User",
       "email": "admin@visa.com",
+      "phone": "+919800000001",
       "password": "admin123",
-      "role": "admin"
+      "role": "admin",
+      "joined_at": "2026-01-01T09:00:00.000Z"
     },
     {
       "id": "user-agent1",
       "name": "Priya Sharma",
       "email": "priya@visa.com",
+      "phone": "+919876543211",
       "password": "agent123",
-      "role": "agent"
+      "role": "agent",
+      "joined_at": "2026-02-15T09:00:00.000Z"
     },
     {
       "id": "user-agent2",
       "name": "Rahul Khan",
       "email": "rahul@visa.com",
+      "phone": "+919876543212",
       "password": "agent123",
-      "role": "agent"
+      "role": "agent",
+      "joined_at": "2026-03-10T09:00:00.000Z"
     }
   ],
   "leads": [
@@ -32,7 +38,7 @@
       "age": 24,
       "city": "Mumbai",
       "visa_type": "student",
-      "source": "facebook",
+      "source": "meta",
       "marital_status": "single",
       "kids": null,
       "highest_qualification": "B.Com",
@@ -122,7 +128,7 @@
       "age": 22,
       "city": "Bangalore",
       "visa_type": "student",
-      "source": "instagram",
+      "source": "meta",
       "marital_status": "single",
       "kids": null,
       "highest_qualification": "B.Sc",

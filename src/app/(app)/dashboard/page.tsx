@@ -8,6 +8,7 @@ import {
   labelForVisaType,
   labelForStatus,
   statusColor,
+  DASHBOARD_SOURCES,
 } from "@/lib/constants";
 import { getSession } from "@/lib/auth";
 import { getDashboardStats } from "@/lib/db";
@@ -96,6 +97,7 @@ export default async function DashboardPage() {
           title="Leads by Source"
           data={stats.bySource}
           labelFn={labelForSource}
+          order={DASHBOARD_SOURCES.map((s) => s.value)}
           color="bg-indigo-500"
         />
         <BarChart

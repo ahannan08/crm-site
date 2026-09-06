@@ -3,6 +3,7 @@ interface BarChartProps {
   data: Record<string, number>;
   labelFn?: (key: string) => string;
   color?: string;
+  order?: string[];
 }
 
 export default function BarChart({
@@ -10,8 +11,11 @@ export default function BarChart({
   data,
   labelFn = (k) => k,
   color = "bg-indigo-500",
+  order,
 }: BarChartProps) {
-  const entries = Object.entries(data).sort((a, b) => b[1] - a[1]);
+  const entries = order
+    ? order.map((key) => [key, data[key] ?? 0] as [string, number])
+    : Object.entries(data).sort((a, b) => b[1] - a[1]);
   const max = Math.max(...entries.map(([, v]) => v), 1);
 
   if (entries.length === 0) {

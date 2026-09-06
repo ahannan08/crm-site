@@ -21,10 +21,31 @@ import type {
   User,
   VisaType,
 } from "./types";
+import { bucketSourceForDashboard, DASHBOARD_SOURCES } from "./constants";
 
 const DATA_DIR = join(process.cwd(), "data");
 const DB_PATH = join(DATA_DIR, "db.json");
 const SEED_PATH = join(DATA_DIR, "seed.json");
+
+function normalizeSource(source: string): LeadSource {
+  if (source === "facebook" || source === "instagram") return "meta";
+  if (source === "phone_call") return "other";
+  const valid: LeadSource[] = ["meta", "justdial", "walk_in", "google_ads", "website", "referral", "other"];
+  if (valid.includes(source as LeadSource)) return source as LeadSource;
+  return "other";
+}
+
+function normalizeUser(raw: Partial<User> & Pick<User, "id" | "name" | "email" | "password" | "role">): User {
+  return {
+    id: raw.id,
+    name: raw.name,
+    email: raw.email,
+    phone: raw.phone ?? "",
+    password: raw.password,
+    role: raw.role,
+    joined_at: raw.joined_at ?? new Date().toISOString(),
+  };
+}
 
 function normalizeLead(raw: Partial<Lead> & Pick<Lead, "id" | "name" | "phone">): Lead {
   const createdAt = raw.created_at ?? new Date().toISOString();
@@ -37,7 +58,7 @@ function normalizeLead(raw: Partial<Lead> & Pick<Lead, "id" | "name" | "phone">)
     age: raw.age ?? null,
     city: raw.city ?? "",
     visa_type: raw.visa_type ?? "visit",
-    source: raw.source ?? "walk_in",
+    source: normalizeSource(raw.source ?? "walk_in"),
     marital_status: (raw.marital_status ?? "") as MaritalStatus | "",
     kids: raw.kids ?? null,
     highest_qualification: raw.highest_qualification ?? "",
@@ -68,6 +89,7 @@ function ensureDb(): Database {
     copyFileSync(SEED_PATH, DB_PATH);
   }
   const db = JSON.parse(readFileSync(DB_PATH, "utf-8")) as Database;
+  db.users = db.users.map((user) => normalizeUser(user));
   db.leads = db.leads.map((lead) => normalizeLead(lead));
   return db;
 }
@@ -86,6 +108,24 @@ export function getUserByEmail(email: string): User | undefined {
 
 export function getUserById(id: string): User | undefined {
   return ensureDb().users.find((u) => u.id === id);
+}
+
+export interface AgentSummary extends Omit<User, "password"> {
+  leadCount: number;
+}
+
+export function getAgents(): AgentSummary[] {
+  const db = ensureDb();
+  return db.users
+    .filter((u) => u.role === "agent")
+    .map(({ password: _, ...user }) => ({
+      ...user,
+      leadCount: db.leads.filter((l) => l.assigned_to === user.id).length,
+    }));
+}
+
+export function getAgentLeads(agentId: string): Lead[] {
+  return getLeads({ assigned_to: agentId });
 }
 
 export interface LeadFilters {
@@ -285,12 +325,15 @@ export function getDashboardStats(userId?: string, role?: string): DashboardStat
   const todayStart = startOfDay(now);
   const todayEnd = endOfDay(now);
 
-  const bySource: Record<string, number> = {};
+  const bySource: Record<string, number> = Object.fromEntries(
+    DASHBOARD_SOURCES.map((s) => [s.value, 0])
+  );
   const byVisaType: Record<string, number> = {};
   const byStatus: Record<string, number> = {};
 
   for (const lead of allLeads) {
-    bySource[lead.source] = (bySource[lead.source] ?? 0) + 1;
+    const bucket = bucketSourceForDashboard(lead.source);
+    bySource[bucket] = (bySource[bucket] ?? 0) + 1;
     byVisaType[lead.visa_type] = (byVisaType[lead.visa_type] ?? 0) + 1;
     byStatus[lead.status] = (byStatus[lead.status] ?? 0) + 1;
   }
