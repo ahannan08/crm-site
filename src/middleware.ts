@@ -7,6 +7,7 @@ const PUBLIC_PATHS = [
   "/register",
   "/onboarding",
   "/api/auth/login",
+  "/api/auth/logout",
   "/api/auth/register",
   "/api/onboarding",
 ];
@@ -59,7 +60,11 @@ export function middleware(request: NextRequest) {
     }
 
     if (session.role === "super_admin") {
-      if (!pathname.startsWith("/super-admin") && !pathname.startsWith("/api/super-admin")) {
+      if (
+        !pathname.startsWith("/super-admin") &&
+        !pathname.startsWith("/api/super-admin") &&
+        !pathname.startsWith("/api/auth/logout")
+      ) {
         return NextResponse.redirect(new URL("/super-admin/requests", request.url));
       }
       return NextResponse.next();

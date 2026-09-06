@@ -1,7 +1,8 @@
 import { randomUUID } from "crypto";
 import { createAdminClient, isSupabaseAdminConfigured } from "./supabase/admin";
-import { sendOnboardingEmail } from "./email";
+import { sendOnboardingEmail, sendSuperAdminRegistrationAlert, buildOnboardingLink } from "./email";
 import type { RegistrationRequest, RegistrationStatus } from "./types";
+import { countAgencies } from "./agency-store";
 
 const TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -24,15 +25,28 @@ export async function createRegistrationRequest(input: {
   const admin = createAdminClient();
   const email = input.email.trim().toLowerCase();
 
-  const { data: existing } = await admin
+  const { data: existingPending } = await admin
     .from("registration_requests")
     .select("id")
     .eq("email", email)
     .eq("status", "pending")
     .maybeSingle();
 
-  if (existing) {
+  if (existingPending) {
     return { ok: false, error: "A pending registration already exists for this email." };
+  }
+
+  const existingUserId = await findAuthUserIdByEmail(admin, email);
+  if (existingUserId) {
+    const { data: profile } = await admin
+      .from("profiles")
+      .select("onboarding_complete, app_role")
+      .eq("id", existingUserId)
+      .maybeSingle();
+
+    if (profile?.onboarding_complete) {
+      return { ok: false, error: "An account with this email already exists." };
+    }
   }
 
   const { error } = await admin.from("registration_requests").insert({
@@ -46,7 +60,66 @@ export async function createRegistrationRequest(input: {
   if (error) {
     return { ok: false, error: error.message };
   }
+
+  const superAdminEmails = await getSuperAdminEmails();
+  await sendSuperAdminRegistrationAlert({
+    to: superAdminEmails,
+    name: input.name.trim(),
+    email,
+    company_name: input.company_name.trim(),
+    phone: input.phone?.trim(),
+  });
+
   return { ok: true };
+}
+
+async function getSuperAdminEmails(): Promise<string[]> {
+  const admin = createAdminClient();
+  const { data } = await admin
+    .from("profiles")
+    .select("email")
+    .eq("app_role", "super_admin");
+
+  const emails = new Set<string>();
+  for (const row of data ?? []) {
+    if (row.email) emails.add(row.email);
+  }
+  if (process.env.SUPER_ADMIN_NOTIFY_EMAIL) {
+    emails.add(process.env.SUPER_ADMIN_NOTIFY_EMAIL.trim());
+  }
+  return [...emails];
+}
+
+export interface SuperAdminDashboardData {
+  metrics: {
+    pending: number;
+    approved: number;
+    rejected: number;
+    totalAgencies: number;
+  };
+  requests: RegistrationRequest[];
+}
+
+export async function getSuperAdminDashboard(): Promise<SuperAdminDashboardData> {
+  const admin = createAdminClient();
+  const [requests, totalAgencies] = await Promise.all([
+    listRegistrationRequests(),
+    countAgencies(),
+  ]);
+
+  const pending = requests.filter((r) => r.status === "pending").length;
+  const approved = requests.filter((r) => r.status === "approved").length;
+  const rejected = requests.filter((r) => r.status === "rejected").length;
+
+  return {
+    metrics: {
+      pending,
+      approved,
+      rejected,
+      totalAgencies,
+    },
+    requests,
+  };
 }
 
 export async function listRegistrationRequests(
@@ -67,10 +140,74 @@ export async function listRegistrationRequests(
   return (data ?? []) as RegistrationRequest[];
 }
 
+async function findAuthUserIdByEmail(
+  admin: ReturnType<typeof createAdminClient>,
+  email: string
+): Promise<string | null> {
+  const normalized = email.trim().toLowerCase();
+
+  const { data: profile } = await admin
+    .from("profiles")
+    .select("id")
+    .eq("email", normalized)
+    .maybeSingle();
+
+  if (profile?.id) return profile.id;
+
+  let page = 1;
+  while (page <= 10) {
+    const { data, error } = await admin.auth.admin.listUsers({ page, perPage: 200 });
+    if (error || !data.users.length) break;
+
+    const match = data.users.find((u) => u.email?.toLowerCase() === normalized);
+    if (match) return match.id;
+
+    if (data.users.length < 200) break;
+    page++;
+  }
+
+  return null;
+}
+
+async function finalizeApproval(
+  admin: ReturnType<typeof createAdminClient>,
+  request: RegistrationRequest,
+  requestId: string,
+  reviewerId: string,
+  userId: string
+): Promise<{ ok: true; onboardingLink: string; emailSent: boolean } | { ok: false; error: string }> {
+  const setupToken = randomUUID();
+  const tokenExpiresAt = new Date(Date.now() + TOKEN_TTL_MS).toISOString();
+
+  const { error: updateError } = await admin
+    .from("registration_requests")
+    .update({
+      status: "approved",
+      setup_token: setupToken,
+      token_expires_at: tokenExpiresAt,
+      reviewed_at: new Date().toISOString(),
+      reviewed_by: reviewerId,
+    })
+    .eq("id", requestId);
+
+  if (updateError) {
+    return { ok: false, error: updateError.message };
+  }
+
+  const emailSent = await sendOnboardingEmail(request.email, request.name, setupToken);
+  return {
+    ok: true,
+    onboardingLink: buildOnboardingLink(setupToken),
+    emailSent,
+  };
+}
+
 export async function approveRegistrationRequest(
   requestId: string,
   reviewerId: string
-): Promise<{ ok: true } | { ok: false; error: string }> {
+): Promise<
+  { ok: true; onboardingLink: string; emailSent: boolean } | { ok: false; error: string }
+> {
   const admin = createAdminClient();
 
   const { data: request, error: fetchError } = await admin
@@ -84,10 +221,38 @@ export async function approveRegistrationRequest(
     return { ok: false, error: "Request not found or already reviewed." };
   }
 
-  const setupToken = randomUUID();
-  const tokenExpiresAt = new Date(Date.now() + TOKEN_TTL_MS).toISOString();
-  const tempPassword = randomUUID();
+  const existingUserId = await findAuthUserIdByEmail(admin, request.email);
 
+  if (existingUserId) {
+    const { data: profile } = await admin
+      .from("profiles")
+      .select("id, onboarding_complete")
+      .eq("id", existingUserId)
+      .maybeSingle();
+
+    if (profile?.onboarding_complete) {
+      return { ok: false, error: "This agency has already completed onboarding." };
+    }
+
+    if (!profile) {
+      const { error: profileError } = await admin.from("profiles").insert({
+        id: existingUserId,
+        name: request.name,
+        email: request.email,
+        phone: request.phone ?? "",
+        app_role: "admin",
+        onboarding_complete: false,
+      });
+
+      if (profileError) {
+        return { ok: false, error: profileError.message };
+      }
+    }
+
+    return finalizeApproval(admin, request as RegistrationRequest, requestId, reviewerId, existingUserId);
+  }
+
+  const tempPassword = randomUUID();
   const { data: authUser, error: authError } = await admin.auth.admin.createUser({
     email: request.email,
     password: tempPassword,
@@ -113,23 +278,44 @@ export async function approveRegistrationRequest(
     return { ok: false, error: profileError.message };
   }
 
-  const { error: updateError } = await admin
-    .from("registration_requests")
-    .update({
-      status: "approved",
-      setup_token: setupToken,
-      token_expires_at: tokenExpiresAt,
-      reviewed_at: new Date().toISOString(),
-      reviewed_by: reviewerId,
-    })
-    .eq("id", requestId);
+  return finalizeApproval(admin, request as RegistrationRequest, requestId, reviewerId, authUser.user.id);
+}
 
-  if (updateError) {
-    return { ok: false, error: updateError.message };
+export async function resendSetupLink(
+  requestId: string,
+  reviewerId: string
+): Promise<
+  { ok: true; onboardingLink: string; emailSent: boolean } | { ok: false; error: string }
+> {
+  const admin = createAdminClient();
+
+  const { data: request, error: fetchError } = await admin
+    .from("registration_requests")
+    .select("*")
+    .eq("id", requestId)
+    .eq("status", "approved")
+    .single();
+
+  if (fetchError || !request) {
+    return { ok: false, error: "Approved request not found." };
   }
 
-  await sendOnboardingEmail(request.email, request.name, setupToken);
-  return { ok: true };
+  const userId = await findAuthUserIdByEmail(admin, request.email);
+  if (!userId) {
+    return { ok: false, error: "User account not found for this registration." };
+  }
+
+  const { data: profile } = await admin
+    .from("profiles")
+    .select("onboarding_complete")
+    .eq("id", userId)
+    .single();
+
+  if (profile?.onboarding_complete) {
+    return { ok: false, error: "This agency has already completed onboarding." };
+  }
+
+  return finalizeApproval(admin, request as RegistrationRequest, requestId, reviewerId, userId);
 }
 
 export async function rejectRegistrationRequest(

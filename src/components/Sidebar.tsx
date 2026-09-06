@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
   Users,
@@ -28,13 +28,10 @@ const agentNav = [
 
 export default function Sidebar({ user }: { user: SessionUser }) {
   const pathname = usePathname();
-  const router = useRouter();
   const navItems = user.role === "admin" ? adminNav : agentNav;
 
-  async function handleLogout() {
-    await fetch("/api/auth/logout", { method: "POST" });
-    router.push("/login");
-    router.refresh();
+  function handleLogout() {
+    window.location.href = "/api/auth/logout";
   }
 
   return (

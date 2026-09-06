@@ -8,7 +8,11 @@ export async function GET() {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const { requests } = await getSuperAdminDashboard();
-  const pending = requests.filter((r) => r.status === "pending");
-  return NextResponse.json({ requests: pending });
+  try {
+    const data = await getSuperAdminDashboard();
+    return NextResponse.json(data);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Failed to load dashboard";
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
 }

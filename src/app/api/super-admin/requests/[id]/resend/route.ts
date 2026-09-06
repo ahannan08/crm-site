@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireSession } from "@/lib/auth";
-import { approveRegistrationRequest } from "@/lib/registration";
+import { resendSetupLink } from "@/lib/registration";
 
 export async function POST(
   _request: NextRequest,
@@ -12,7 +12,7 @@ export async function POST(
   }
 
   const { id } = await params;
-  const result = await approveRegistrationRequest(id, session.id);
+  const result = await resendSetupLink(id, session.id);
 
   if (!result.ok) {
     return NextResponse.json({ error: result.error }, { status: 400 });
