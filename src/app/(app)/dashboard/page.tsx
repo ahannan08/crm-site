@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Phone } from "lucide-react";
+import { Phone, Plus } from "lucide-react";
 import { format, isBefore, startOfDay } from "date-fns";
 import StatCard from "@/components/StatCard";
 import BarChart from "@/components/BarChart";
@@ -18,6 +18,7 @@ import {
   AlertCircle,
   Trophy,
   XCircle,
+  Inbox,
 } from "lucide-react";
 
 export default async function DashboardPage() {
@@ -27,16 +28,31 @@ export default async function DashboardPage() {
 
   return (
     <div className="p-8">
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-slate-900">Dashboard</h1>
-        <p className="text-sm text-slate-500">
-          Track leads, follow-ups, and conversions
-          {session!.role === "agent" ? " (your assigned leads)" : ""}
-        </p>
+      <div className="mb-8 flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">Dashboard</h1>
+          <p className="text-sm text-slate-500">
+            Track leads, follow-ups, and conversions
+            {session!.role === "agent" ? " (your assigned leads)" : ""}
+          </p>
+        </div>
+        <Link
+          href="/enquiries/new"
+          className="flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+        >
+          <Plus className="h-4 w-4" />
+          New Enquiry
+        </Link>
       </div>
 
-      <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+      <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
         <StatCard label="Total Leads" value={stats.totalLeads} icon={Users} />
+        <StatCard
+          label="New Enquiries"
+          value={stats.newEnquiries}
+          icon={Inbox}
+          accent="text-violet-600 bg-violet-50"
+        />
         <StatCard
           label="This Week"
           value={stats.leadsThisWeek}

@@ -83,10 +83,63 @@ export default async function LeadDetailPage({
         <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-4">
           <MapPin className="h-5 w-5 text-slate-400" />
           <div>
-            <p className="text-xs text-slate-500">City</p>
+            <p className="text-xs text-slate-500">Location</p>
             <p className="text-sm font-medium">{lead.city || "—"}</p>
           </div>
         </div>
+      </div>
+
+      <div className="mb-8 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+        <h2 className="mb-4 text-lg font-semibold text-slate-900">Enquiry Details</h2>
+        <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {[
+            ["Enquiry Date", lead.enquiry_date ? format(new Date(lead.enquiry_date), "dd MMM yyyy") : "—"],
+            ["Age", lead.age ?? "—"],
+            ["Marital Status", lead.marital_status || "—"],
+            ["Kids", lead.kids ?? "—"],
+            ["Occupation", lead.occupation || "—"],
+            ["Country", lead.country_of_choice || "—"],
+            ["H. Qualification", lead.highest_qualification || "—"],
+            ["Year Finished", lead.year_finished || "—"],
+            ["Passport Expiry", lead.passport_expiry ? format(new Date(lead.passport_expiry), "dd MMM yyyy") : "—"],
+            ["Monthly Income", lead.monthly_income || "—"],
+            ["Savings", lead.savings || "—"],
+            ["ITR", lead.itr || "—"],
+          ].map(([label, value]) => (
+            <div key={label}>
+              <dt className="text-xs text-slate-500">{label}</dt>
+              <dd className="text-sm font-medium text-slate-900">{value}</dd>
+            </div>
+          ))}
+        </dl>
+        {(lead.travel_history || lead.refusals || lead.property_details || lead.notes) && (
+          <div className="mt-4 space-y-3 border-t border-slate-100 pt-4">
+            {lead.travel_history && (
+              <div>
+                <p className="text-xs text-slate-500">Travel History</p>
+                <p className="text-sm text-slate-900">{lead.travel_history}</p>
+              </div>
+            )}
+            {lead.refusals && (
+              <div>
+                <p className="text-xs text-slate-500">Refusals</p>
+                <p className="text-sm text-slate-900">{lead.refusals}</p>
+              </div>
+            )}
+            {lead.property_details && (
+              <div>
+                <p className="text-xs text-slate-500">Property Details</p>
+                <p className="text-sm text-slate-900">{lead.property_details}</p>
+              </div>
+            )}
+            {lead.notes && (
+              <div>
+                <p className="text-xs text-slate-500">Comments</p>
+                <p className="text-sm text-slate-900">{lead.notes}</p>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {lead.next_follow_up_at && (

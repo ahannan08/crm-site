@@ -32,6 +32,14 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json();
+
+  if (!body.name?.trim() || !body.phone?.trim() || !body.enquiry_date) {
+    return NextResponse.json(
+      { error: "Name, phone, and date are required" },
+      { status: 400 }
+    );
+  }
+
   const lead = createLead(body);
   return NextResponse.json({ lead }, { status: 201 });
 }

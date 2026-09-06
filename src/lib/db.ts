@@ -17,6 +17,7 @@ import type {
   Lead,
   LeadSource,
   LeadStatus,
+  MaritalStatus,
   User,
   VisaType,
 } from "./types";
@@ -25,6 +26,40 @@ const DATA_DIR = join(process.cwd(), "data");
 const DB_PATH = join(DATA_DIR, "db.json");
 const SEED_PATH = join(DATA_DIR, "seed.json");
 
+function normalizeLead(raw: Partial<Lead> & Pick<Lead, "id" | "name" | "phone">): Lead {
+  const createdAt = raw.created_at ?? new Date().toISOString();
+  return {
+    id: raw.id,
+    enquiry_date: raw.enquiry_date ?? createdAt.split("T")[0],
+    name: raw.name,
+    phone: raw.phone,
+    email: raw.email ?? "",
+    age: raw.age ?? null,
+    city: raw.city ?? "",
+    visa_type: raw.visa_type ?? "visit",
+    source: raw.source ?? "walk_in",
+    marital_status: (raw.marital_status ?? "") as MaritalStatus | "",
+    kids: raw.kids ?? null,
+    highest_qualification: raw.highest_qualification ?? "",
+    year_finished: raw.year_finished ?? "",
+    passport_expiry: raw.passport_expiry ?? "",
+    travel_history: raw.travel_history ?? "",
+    refusals: raw.refusals ?? "",
+    country_of_choice: raw.country_of_choice ?? "",
+    occupation: raw.occupation ?? "",
+    monthly_income: raw.monthly_income ?? "",
+    savings: raw.savings ?? "",
+    itr: raw.itr ?? "",
+    property_details: raw.property_details ?? "",
+    status: raw.status ?? "new",
+    assigned_to: raw.assigned_to ?? null,
+    next_follow_up_at: raw.next_follow_up_at ?? null,
+    notes: raw.notes ?? "",
+    created_at: createdAt,
+    updated_at: raw.updated_at ?? createdAt,
+  };
+}
+
 function ensureDb(): Database {
   if (!existsSync(DATA_DIR)) {
     mkdirSync(DATA_DIR, { recursive: true });
@@ -32,7 +67,9 @@ function ensureDb(): Database {
   if (!existsSync(DB_PATH)) {
     copyFileSync(SEED_PATH, DB_PATH);
   }
-  return JSON.parse(readFileSync(DB_PATH, "utf-8")) as Database;
+  const db = JSON.parse(readFileSync(DB_PATH, "utf-8")) as Database;
+  db.leads = db.leads.map((lead) => normalizeLead(lead));
+  return db;
 }
 
 function saveDb(db: Database): void {
@@ -100,12 +137,27 @@ export function getLeadById(id: string): Lead | undefined {
 }
 
 export interface CreateLeadInput {
+  enquiry_date: string;
   name: string;
   phone: string;
-  email: string;
-  city: string;
-  visa_type: VisaType;
-  source: LeadSource;
+  email?: string;
+  age?: number | null;
+  city?: string;
+  visa_type?: VisaType;
+  source?: LeadSource;
+  marital_status?: MaritalStatus | "";
+  kids?: number | null;
+  highest_qualification?: string;
+  year_finished?: string;
+  passport_expiry?: string;
+  travel_history?: string;
+  refusals?: string;
+  country_of_choice?: string;
+  occupation?: string;
+  monthly_income?: string;
+  savings?: string;
+  itr?: string;
+  property_details?: string;
   status?: LeadStatus;
   assigned_to?: string | null;
   next_follow_up_at?: string | null;
@@ -115,33 +167,67 @@ export interface CreateLeadInput {
 export function createLead(input: CreateLeadInput): Lead {
   const db = ensureDb();
   const now = new Date().toISOString();
-  const lead: Lead = {
+  const enquiryDate = input.enquiry_date;
+  const createdAt = new Date(enquiryDate).toISOString();
+
+  const lead = normalizeLead({
     id: randomUUID(),
+    enquiry_date: enquiryDate,
     name: input.name,
     phone: input.phone,
-    email: input.email,
-    city: input.city,
-    visa_type: input.visa_type,
-    source: input.source,
+    email: input.email ?? "",
+    age: input.age ?? null,
+    city: input.city ?? "",
+    visa_type: input.visa_type ?? "visit",
+    source: input.source ?? "walk_in",
+    marital_status: input.marital_status ?? "",
+    kids: input.kids ?? null,
+    highest_qualification: input.highest_qualification ?? "",
+    year_finished: input.year_finished ?? "",
+    passport_expiry: input.passport_expiry ?? "",
+    travel_history: input.travel_history ?? "",
+    refusals: input.refusals ?? "",
+    country_of_choice: input.country_of_choice ?? "",
+    occupation: input.occupation ?? "",
+    monthly_income: input.monthly_income ?? "",
+    savings: input.savings ?? "",
+    itr: input.itr ?? "",
+    property_details: input.property_details ?? "",
     status: input.status ?? "new",
     assigned_to: input.assigned_to ?? null,
     next_follow_up_at: input.next_follow_up_at ?? null,
     notes: input.notes ?? "",
-    created_at: now,
+    created_at: createdAt,
     updated_at: now,
-  };
+  });
+
   db.leads.push(lead);
   saveDb(db);
   return lead;
 }
 
 export interface UpdateLeadInput {
+  enquiry_date?: string;
   name?: string;
   phone?: string;
   email?: string;
+  age?: number | null;
   city?: string;
   visa_type?: VisaType;
   source?: LeadSource;
+  marital_status?: MaritalStatus | "";
+  kids?: number | null;
+  highest_qualification?: string;
+  year_finished?: string;
+  passport_expiry?: string;
+  travel_history?: string;
+  refusals?: string;
+  country_of_choice?: string;
+  occupation?: string;
+  monthly_income?: string;
+  savings?: string;
+  itr?: string;
+  property_details?: string;
   status?: LeadStatus;
   assigned_to?: string | null;
   next_follow_up_at?: string | null;
@@ -217,6 +303,7 @@ export function getDashboardStats(userId?: string, role?: string): DashboardStat
 
   return {
     totalLeads: allLeads.length,
+    newEnquiries: allLeads.filter((l) => l.status === "new").length,
     leadsThisWeek: allLeads.filter((l) => isAfter(new Date(l.created_at), weekStart)).length,
     leadsThisMonth: allLeads.filter((l) => isAfter(new Date(l.created_at), monthStart)).length,
     followUpsDueToday: allLeads.filter((l) => {

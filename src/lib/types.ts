@@ -22,6 +22,8 @@ export type LeadStatus =
 
 export type UserRole = "admin" | "agent";
 
+export type MaritalStatus = "single" | "married" | "divorced" | "widowed" | "other";
+
 export type ActivityType = "call" | "note" | "status_change";
 
 export interface User {
@@ -34,12 +36,27 @@ export interface User {
 
 export interface Lead {
   id: string;
+  enquiry_date: string;
   name: string;
   phone: string;
   email: string;
+  age: number | null;
   city: string;
   visa_type: VisaType;
   source: LeadSource;
+  marital_status: MaritalStatus | "";
+  kids: number | null;
+  highest_qualification: string;
+  year_finished: string;
+  passport_expiry: string;
+  travel_history: string;
+  refusals: string;
+  country_of_choice: string;
+  occupation: string;
+  monthly_income: string;
+  savings: string;
+  itr: string;
+  property_details: string;
   status: LeadStatus;
   assigned_to: string | null;
   next_follow_up_at: string | null;
@@ -72,6 +89,7 @@ export interface SessionUser {
 
 export interface DashboardStats {
   totalLeads: number;
+  newEnquiries: number;
   leadsThisWeek: number;
   leadsThisMonth: number;
   followUpsDueToday: number;

@@ -1,4 +1,4 @@
-import type { LeadSource, LeadStatus, VisaType } from "./types";
+import type { LeadSource, LeadStatus, MaritalStatus, VisaType } from "./types";
 
 export const VISA_TYPES: { value: VisaType; label: string }[] = [
   { value: "visit", label: "Visit Visa" },
@@ -15,6 +15,14 @@ export const LEAD_SOURCES: { value: LeadSource; label: string }[] = [
   { value: "walk_in", label: "Walk-in" },
   { value: "referral", label: "Referral" },
   { value: "phone_call", label: "Phone Call" },
+  { value: "other", label: "Other" },
+];
+
+export const MARITAL_STATUSES: { value: MaritalStatus; label: string }[] = [
+  { value: "single", label: "Single" },
+  { value: "married", label: "Married" },
+  { value: "divorced", label: "Divorced" },
+  { value: "widowed", label: "Widowed" },
   { value: "other", label: "Other" },
 ];
 

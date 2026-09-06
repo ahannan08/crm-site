@@ -40,6 +40,7 @@ export default function LeadForm({ users, initial, leadId }: LeadFormProps) {
 
     const form = new FormData(e.currentTarget);
     const body = {
+      enquiry_date: (form.get("enquiry_date") as string) || new Date().toISOString().split("T")[0],
       name: form.get("name") as string,
       phone: form.get("phone") as string,
       email: form.get("email") as string,
