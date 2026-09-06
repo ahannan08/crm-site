@@ -7,6 +7,7 @@ import {
   endOfDay,
 } from "date-fns";
 import { createAdminClient } from "./admin";
+import { sendAgentWelcomeEmail } from "../email";
 import { bucketSourceForDashboard, DASHBOARD_SOURCES } from "../constants";
 import type {
   Activity,
@@ -386,7 +387,12 @@ export async function getDashboardStats(
   };
 }
 
-export async function createAgent(orgId: string, input: CreateAgentInput): Promise<User> {
+export interface CreateAgentResult {
+  user: User;
+  emailSent: boolean;
+}
+
+export async function createAgent(orgId: string, input: CreateAgentInput): Promise<CreateAgentResult> {
   const admin = createAdminClient();
   const email = input.email.trim().toLowerCase();
 
@@ -425,7 +431,13 @@ export async function createAgent(orgId: string, input: CreateAgentInput): Promi
     throw new Error(profileError.message);
   }
 
-  return mapProfileToUser({
+  const { data: org } = await admin
+    .from("organizations")
+    .select("name, website")
+    .eq("id", orgId)
+    .single();
+
+  const user = mapProfileToUser({
     id: authUser.user.id,
     name: input.name.trim(),
     email,
@@ -434,4 +446,15 @@ export async function createAgent(orgId: string, input: CreateAgentInput): Promi
     agent_status: input.agent_status ?? "active",
     joined_at: new Date().toISOString(),
   });
+
+  const emailSent = await sendAgentWelcomeEmail({
+    to: email,
+    name: input.name.trim(),
+    agencyName: org?.name ?? "Your agency",
+    agencyWebsite: org?.website || undefined,
+    email,
+    password: input.password,
+  });
+
+  return { user, emailSent };
 }

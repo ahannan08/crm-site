@@ -37,6 +37,15 @@ export default function CreateAgentForm() {
       return;
     }
 
+    const data = await res.json();
+    if (data.isMock) {
+      alert("Demo mode: agent saved locally. Share login credentials manually.");
+    } else if (!data.emailSent) {
+      alert(
+        "Agent created, but the welcome email could not be sent (check Resend setup). Share login credentials manually."
+      );
+    }
+
     router.push("/agents");
     router.refresh();
   }
@@ -66,6 +75,9 @@ export default function CreateAgentForm() {
         <div>
           <label className="mb-1 block text-sm font-medium text-slate-700">Password *</label>
           <input name="password" type="password" required minLength={6} className={inputClass} />
+          <p className="mt-1 text-xs text-slate-500">
+            Sent to the agent by email along with the login link.
+          </p>
         </div>
         <div>
           <label className="mb-1 block text-sm font-medium text-slate-700">Status</label>

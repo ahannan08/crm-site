@@ -1,7 +1,7 @@
 import * as mockDb from "./db";
 import * as supabaseCrm from "./supabase/crm-store";
 import { isMockSession } from "./mock-auth";
-import type { SessionUser } from "./types";
+import type { SessionUser, User } from "./types";
 
 export type {
   CreateAgentInput,
@@ -96,8 +96,18 @@ export async function getDashboardStats(session: SessionUser) {
   return supabaseCrm.getDashboardStats(requireOrgId(session), session.id, session.role);
 }
 
-export async function createAgent(session: SessionUser, input: mockDb.CreateAgentInput) {
-  if (isMockSession(session)) return mockDb.createAgent(input);
+export interface CreateAgentResult {
+  user: User;
+  emailSent: boolean;
+}
+
+export async function createAgent(
+  session: SessionUser,
+  input: mockDb.CreateAgentInput
+): Promise<CreateAgentResult> {
+  if (isMockSession(session)) {
+    return { user: mockDb.createAgent(input), emailSent: false };
+  }
   return supabaseCrm.createAgent(requireOrgId(session), input);
 }
 

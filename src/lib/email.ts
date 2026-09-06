@@ -94,3 +94,39 @@ export async function sendSuperAdminRegistrationAlert(input: {
 export function buildOnboardingLink(token: string): string {
   return `${APP_URL}/onboarding?token=${token}`;
 }
+
+export async function sendAgentWelcomeEmail(input: {
+  to: string;
+  name: string;
+  agencyName: string;
+  agencyWebsite?: string;
+  email: string;
+  password: string;
+}): Promise<boolean> {
+  const loginUrl = `${APP_URL}/login`;
+  const websiteLine = input.agencyWebsite
+    ? `<p><strong>Agency website:</strong> <a href="${input.agencyWebsite}">${input.agencyWebsite}</a></p>`
+    : "";
+
+  const sent = await sendEmail({
+    to: input.to,
+    subject: `You've been added to ${input.agencyName} on Visa CRM`,
+    html: `
+      <p>Hi ${input.name},</p>
+      <p>You have been added as an agent at <strong>${input.agencyName}</strong>.</p>
+      ${websiteLine}
+      <p>Use the credentials below to sign in:</p>
+      <ul>
+        <li><strong>Login page:</strong> <a href="${loginUrl}">${loginUrl}</a></li>
+        <li><strong>Email:</strong> ${input.email}</li>
+        <li><strong>Password:</strong> ${input.password}</li>
+      </ul>
+      <p>We recommend changing your password after your first login.</p>
+    `,
+  });
+
+  if (!sent) {
+    console.log("[email] Agent welcome — login:", loginUrl, "| email:", input.email);
+  }
+  return sent;
+}
