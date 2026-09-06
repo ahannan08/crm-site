@@ -62,6 +62,17 @@ export interface RegistrationRequest {
   reviewed_at: string | null;
 }
 
+export type FollowUpMilestone = "due_in_2d" | "due_in_1d" | "due_today" | "overdue_1d";
+
+export interface NotificationLog {
+  id: string;
+  organization_id?: string;
+  lead_id: string;
+  milestone: FollowUpMilestone;
+  sent_at: string;
+  recipients: string[];
+}
+
 export interface Lead {
   id: string;
   organization_id?: string | null;
@@ -89,6 +100,7 @@ export interface Lead {
   status: LeadStatus;
   assigned_to: string | null;
   next_follow_up_at: string | null;
+  whatsapp_reminders_enabled: boolean;
   notes: string;
   created_at: string;
   updated_at: string;
@@ -107,6 +119,7 @@ export interface Database {
   users: User[];
   leads: Lead[];
   activities: Activity[];
+  notification_logs: NotificationLog[];
 }
 
 export interface SessionUser {

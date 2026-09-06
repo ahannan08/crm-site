@@ -21,6 +21,7 @@ import type {
   User,
   VisaType,
   AgentStatus,
+  NotificationLog,
 } from "./types";
 import { bucketSourceForDashboard, DASHBOARD_SOURCES } from "./constants";
 
@@ -77,6 +78,7 @@ function normalizeLead(raw: Partial<Lead> & Pick<Lead, "id" | "name" | "phone">)
     status: raw.status ?? "new",
     assigned_to: raw.assigned_to ?? null,
     next_follow_up_at: raw.next_follow_up_at ?? null,
+    whatsapp_reminders_enabled: raw.whatsapp_reminders_enabled ?? true,
     notes: raw.notes ?? "",
     created_at: createdAt,
     updated_at: raw.updated_at ?? createdAt,
@@ -93,6 +95,7 @@ function ensureDb(): Database {
   const db = JSON.parse(readFileSync(DB_PATH, "utf-8")) as Database;
   db.users = db.users.map((user) => normalizeUser(user));
   db.leads = db.leads.map((lead) => normalizeLead(lead));
+  if (!db.notification_logs) db.notification_logs = [];
   return db;
 }
 
@@ -249,6 +252,7 @@ export interface CreateLeadInput {
   status?: LeadStatus;
   assigned_to?: string | null;
   next_follow_up_at?: string | null;
+  whatsapp_reminders_enabled?: boolean;
   notes?: string;
 }
 
@@ -284,6 +288,7 @@ export function createLead(input: CreateLeadInput): Lead {
     status: input.status ?? "new",
     assigned_to: input.assigned_to ?? null,
     next_follow_up_at: input.next_follow_up_at ?? null,
+    whatsapp_reminders_enabled: input.whatsapp_reminders_enabled ?? true,
     notes: input.notes ?? "",
     created_at: createdAt,
     updated_at: now,
@@ -319,6 +324,7 @@ export interface UpdateLeadInput {
   status?: LeadStatus;
   assigned_to?: string | null;
   next_follow_up_at?: string | null;
+  whatsapp_reminders_enabled?: boolean;
   notes?: string;
 }
 
@@ -419,4 +425,37 @@ export function getDashboardStats(userId?: string, role?: string): DashboardStat
     ),
     activeAgents: getActiveAgentsCount(),
   };
+}
+
+export function getMockLeadsForWhatsAppReminders(): Lead[] {
+  return ensureDb().leads.filter(
+    (l) =>
+      l.whatsapp_reminders_enabled &&
+      l.next_follow_up_at &&
+      l.status !== "won" &&
+      l.status !== "lost"
+  );
+}
+
+export function hasMockNotificationLog(leadId: string, milestone: string): boolean {
+  const db = ensureDb();
+  return db.notification_logs.some(
+    (n) => n.lead_id === leadId && n.milestone === milestone
+  );
+}
+
+export function addMockNotificationLog(
+  leadId: string,
+  milestone: string,
+  recipients: string[]
+): void {
+  const db = ensureDb();
+  db.notification_logs.push({
+    id: randomUUID(),
+    lead_id: leadId,
+    milestone: milestone as NotificationLog["milestone"],
+    sent_at: new Date().toISOString(),
+    recipients,
+  });
+  saveDb(db);
 }

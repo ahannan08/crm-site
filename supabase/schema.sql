@@ -84,6 +84,7 @@ create table leads (
   status lead_status not null default 'new',
   assigned_to uuid references profiles(id) on delete set null,
   next_follow_up_at timestamptz,
+  whatsapp_reminders_enabled boolean not null default true,
   notes text not null default '',
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
@@ -108,12 +109,27 @@ create table activities (
 create index activities_lead_id_idx on activities(lead_id);
 create index activities_organization_id_idx on activities(organization_id);
 
+-- WhatsApp follow-up notification dedup (staff alerts only)
+create table notification_logs (
+  id uuid primary key default gen_random_uuid(),
+  organization_id uuid not null references organizations(id) on delete cascade,
+  lead_id uuid not null references leads(id) on delete cascade,
+  milestone text not null check (milestone in ('due_in_2d', 'due_in_1d', 'due_today', 'overdue_1d')),
+  sent_at timestamptz not null default now(),
+  recipients text[] not null default '{}',
+  unique (lead_id, milestone)
+);
+
+create index notification_logs_organization_id_idx on notification_logs(organization_id);
+create index notification_logs_lead_id_idx on notification_logs(lead_id);
+
 -- RLS
 alter table organizations enable row level security;
 alter table registration_requests enable row level security;
 alter table profiles enable row level security;
 alter table leads enable row level security;
 alter table activities enable row level security;
+alter table notification_logs enable row level security;
 
 -- Helper: current user's org
 create or replace function auth_user_org_id()
@@ -183,3 +199,6 @@ create policy "activities_select" on activities for select using (
 create policy "activities_insert" on activities for insert with check (
   organization_id = auth_user_org_id()
 );
+
+-- Notification logs: service role / cron only (no client access)
+create policy "notification_logs_deny_all" on notification_logs for all using (false);

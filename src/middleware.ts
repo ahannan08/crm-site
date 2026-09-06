@@ -10,6 +10,8 @@ const PUBLIC_PATHS = [
   "/api/auth/logout",
   "/api/auth/register",
   "/api/onboarding",
+  "/api/cron/follow-up-notifications",
+  "/api/webhooks/whatsapp",
 ];
 
 function parseSession(raw: string | undefined): SessionUser | null {

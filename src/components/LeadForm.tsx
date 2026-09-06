@@ -21,6 +21,7 @@ interface LeadFormProps {
     status: LeadStatus;
     assigned_to: string | null;
     next_follow_up_at: string | null;
+    whatsapp_reminders_enabled?: boolean;
     notes: string;
   }>;
   leadId?: string;
@@ -54,6 +55,7 @@ export default function LeadForm({ users, initial, leadId }: LeadFormProps) {
       next_follow_up_at: (form.get("next_follow_up_at") as string)
         ? new Date(form.get("next_follow_up_at") as string).toISOString()
         : null,
+      whatsapp_reminders_enabled: form.get("whatsapp_reminders_enabled") === "on",
       notes: form.get("notes") as string,
     };
 
@@ -149,6 +151,15 @@ export default function LeadForm({ users, initial, leadId }: LeadFormProps) {
             }
             className={inputClass}
           />
+          <label className="mt-2 flex items-center gap-2 text-sm text-slate-600">
+            <input
+              type="checkbox"
+              name="whatsapp_reminders_enabled"
+              defaultChecked={initial?.whatsapp_reminders_enabled !== false}
+              className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+            />
+            Send WhatsApp follow-up reminders to admin &amp; assigned agent (on by default)
+          </label>
         </div>
         <div className="sm:col-span-2">
           <label className="mb-1 block text-sm font-medium text-slate-700">Notes</label>
