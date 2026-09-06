@@ -79,8 +79,15 @@ export default function LoginPage() {
           </button>
         </form>
 
-        <div className="mt-6 rounded-lg bg-slate-50 p-4 text-xs text-slate-500">
-          <p className="font-medium text-slate-700">Demo accounts</p>
+        <p className="mt-6 text-center text-sm text-slate-500">
+          New company?{" "}
+          <a href="/register" className="font-medium text-indigo-600 hover:underline">
+            Request access
+          </a>
+        </p>
+
+        <div className="mt-4 rounded-lg bg-slate-50 p-4 text-xs text-slate-500">
+          <p className="font-medium text-slate-700">Demo accounts (no approval needed)</p>
           <p className="mt-1">Admin: admin@visa.com / admin123</p>
           <p>Agent: priya@visa.com / agent123</p>
         </div>

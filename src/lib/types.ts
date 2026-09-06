@@ -19,6 +19,9 @@ export type LeadStatus =
   | "lost";
 
 export type UserRole = "admin" | "agent";
+export type AppRole = "super_admin" | "admin" | "agent";
+export type AuthMode = "mock" | "supabase";
+export type RegistrationStatus = "pending" | "approved" | "rejected";
 
 export type AgentStatus = "active" | "inactive";
 
@@ -37,8 +40,31 @@ export interface User {
   joined_at: string;
 }
 
+export interface Organization {
+  id: string;
+  name: string;
+  website: string;
+  logo_url: string;
+  description: string;
+  created_at: string;
+}
+
+export interface RegistrationRequest {
+  id: string;
+  name: string;
+  email: string;
+  company_name: string;
+  phone: string;
+  status: RegistrationStatus;
+  setup_token: string | null;
+  token_expires_at: string | null;
+  created_at: string;
+  reviewed_at: string | null;
+}
+
 export interface Lead {
   id: string;
+  organization_id?: string | null;
   enquiry_date: string;
   name: string;
   phone: string;
@@ -87,7 +113,10 @@ export interface SessionUser {
   id: string;
   name: string;
   email: string;
-  role: UserRole;
+  role: AppRole;
+  authMode: AuthMode;
+  organizationId: string | null;
+  onboardingComplete: boolean;
 }
 
 export interface DashboardStats {

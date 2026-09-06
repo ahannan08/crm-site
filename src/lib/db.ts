@@ -105,7 +105,8 @@ export function getUsers(): User[] {
 }
 
 export function getUserByEmail(email: string): User | undefined {
-  return ensureDb().users.find((u) => u.email === email);
+  const normalized = email.trim().toLowerCase();
+  return ensureDb().users.find((u) => u.email.toLowerCase() === normalized);
 }
 
 export function getUserById(id: string): User | undefined {
@@ -170,12 +171,16 @@ export interface LeadFilters {
   search?: string;
   mine?: string;
   period?: "week" | "month";
+  organization_id?: string;
 }
 
 export function getLeads(filters: LeadFilters = {}): Lead[] {
   const db = ensureDb();
   let leads = [...db.leads];
 
+  if (filters.organization_id) {
+    leads = leads.filter((l) => l.organization_id === filters.organization_id);
+  }
   if (filters.mine) {
     leads = leads.filter((l) => l.assigned_to === filters.mine);
   }

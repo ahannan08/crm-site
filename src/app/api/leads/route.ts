@@ -21,6 +21,10 @@ export async function GET(request: NextRequest) {
     search: params.get("search") || undefined,
     period,
     mine: session.role === "agent" ? session.id : undefined,
+    organization_id:
+      session.authMode === "supabase" && session.organizationId
+        ? session.organizationId
+        : undefined,
   };
 
   const leads = getLeads(filters);

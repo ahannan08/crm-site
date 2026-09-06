@@ -24,7 +24,16 @@ export async function getSession(): Promise<SessionUser | null> {
   const raw = cookieStore.get(SESSION_COOKIE)?.value;
   if (!raw) return null;
   try {
-    return JSON.parse(raw) as SessionUser;
+    const parsed = JSON.parse(raw) as Partial<SessionUser> & Pick<SessionUser, "id" | "name" | "email" | "role">;
+    return {
+      id: parsed.id,
+      name: parsed.name,
+      email: parsed.email,
+      role: parsed.role,
+      authMode: parsed.authMode ?? "mock",
+      organizationId: parsed.organizationId ?? null,
+      onboardingComplete: parsed.onboardingComplete ?? true,
+    };
   } catch {
     return null;
   }
