@@ -1,7 +1,9 @@
 import Link from "next/link";
-import { Phone, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 import { format, isBefore, startOfDay } from "date-fns";
 import StatCard from "@/components/StatCard";
+import WonLostCard from "@/components/WonLostCard";
+import WhatsAppButton from "@/components/WhatsAppButton";
 import BarChart from "@/components/BarChart";
 import {
   labelForSource,
@@ -17,9 +19,8 @@ import {
   TrendingUp,
   CalendarClock,
   AlertCircle,
-  Trophy,
-  XCircle,
   Inbox,
+  Phone,
 } from "lucide-react";
 
 export default async function DashboardPage() {
@@ -46,50 +47,47 @@ export default async function DashboardPage() {
         </Link>
       </div>
 
-      <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
-        <StatCard label="Total Leads" value={stats.totalLeads} icon={Users} />
+      <div className="mb-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+        <StatCard label="Total Leads" value={stats.totalLeads} icon={Users} href="/leads" />
         <StatCard
           label="New Enquiries"
           value={stats.newEnquiries}
           icon={Inbox}
           accent="text-violet-600 bg-violet-50"
-        />
-        <StatCard
-          label="This Week"
-          value={stats.leadsThisWeek}
-          icon={TrendingUp}
-          accent="text-emerald-600 bg-emerald-50"
-        />
-        <StatCard
-          label="This Month"
-          value={stats.leadsThisMonth}
-          icon={CalendarClock}
-          accent="text-blue-600 bg-blue-50"
+          href="/leads?status=new"
         />
         <StatCard
           label="Due Today"
           value={stats.followUpsDueToday}
           icon={Phone}
           accent="text-amber-600 bg-amber-50"
+          href="/follow-ups#due-today"
         />
         <StatCard
           label="Overdue"
           value={stats.followUpsOverdue}
           icon={AlertCircle}
           accent="text-red-600 bg-red-50"
+          href="/follow-ups#overdue"
         />
-        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-          <p className="text-sm text-slate-500">Won / Lost</p>
-          <div className="mt-1 flex items-center gap-3">
-            <span className="flex items-center gap-1 text-xl font-bold text-green-600">
-              <Trophy className="h-4 w-4" /> {stats.wonCount}
-            </span>
-            <span className="text-slate-300">/</span>
-            <span className="flex items-center gap-1 text-xl font-bold text-red-500">
-              <XCircle className="h-4 w-4" /> {stats.lostCount}
-            </span>
-          </div>
-        </div>
+        <WonLostCard wonCount={stats.wonCount} lostCount={stats.lostCount} />
+      </div>
+
+      <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:max-w-md">
+        <StatCard
+          label="This Week"
+          value={stats.leadsThisWeek}
+          icon={TrendingUp}
+          accent="text-emerald-600 bg-emerald-50"
+          href="/leads?period=week"
+        />
+        <StatCard
+          label="This Month"
+          value={stats.leadsThisMonth}
+          icon={CalendarClock}
+          accent="text-blue-600 bg-blue-50"
+          href="/leads?period=month"
+        />
       </div>
 
       <div className="mb-8 grid gap-6 lg:grid-cols-3">
@@ -148,13 +146,7 @@ export default async function DashboardPage() {
                       )}
                     </p>
                   </div>
-                  <a
-                    href={`tel:${lead.phone}`}
-                    className="flex items-center gap-1 rounded-lg bg-green-50 px-3 py-1.5 text-xs font-medium text-green-700 hover:bg-green-100"
-                  >
-                    <Phone className="h-3 w-3" />
-                    Call
-                  </a>
+                  <WhatsAppButton phone={lead.phone} />
                 </div>
               );
             })}

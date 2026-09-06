@@ -135,6 +135,7 @@ export interface LeadFilters {
   assigned_to?: string;
   search?: string;
   mine?: string;
+  period?: "week" | "month";
 }
 
 export function getLeads(filters: LeadFilters = {}): Lead[] {
@@ -165,6 +166,14 @@ export function getLeads(filters: LeadFilters = {}): Lead[] {
         l.email.toLowerCase().includes(q) ||
         l.city.toLowerCase().includes(q)
     );
+  }
+  if (filters.period === "week") {
+    const weekStart = startOfWeek(new Date(), { weekStartsOn: 1 });
+    leads = leads.filter((l) => isAfter(new Date(l.created_at), weekStart));
+  }
+  if (filters.period === "month") {
+    const monthStart = startOfMonth(new Date());
+    leads = leads.filter((l) => isAfter(new Date(l.created_at), monthStart));
   }
 
   return leads.sort(

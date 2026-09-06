@@ -2,14 +2,13 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Phone, Mail, MapPin } from "lucide-react";
 import { format } from "date-fns";
-import LeadForm from "@/components/LeadForm";
+import LeadDetailActions from "@/components/LeadDetailActions";
 import ActivityLog from "@/components/ActivityLog";
+import WhatsAppButton from "@/components/WhatsAppButton";
 import { getLeadById, getActivities, getUsers, getUserById } from "@/lib/db";
 import {
   labelForVisaType,
   labelForSource,
-  labelForStatus,
-  statusColor,
 } from "@/lib/constants";
 
 export default async function LeadDetailPage({
@@ -42,9 +41,6 @@ export default async function LeadDetailPage({
         <div>
           <h1 className="text-2xl font-bold text-slate-900">{lead.name}</h1>
           <div className="mt-2 flex flex-wrap items-center gap-3 text-sm text-slate-500">
-            <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${statusColor(lead.status)}`}>
-              {labelForStatus(lead.status)}
-            </span>
             <span>{labelForVisaType(lead.visa_type)}</span>
             <span>·</span>
             <span>{labelForSource(lead.source)}</span>
@@ -56,13 +52,11 @@ export default async function LeadDetailPage({
             )}
           </div>
         </div>
-        <a
-          href={`tel:${lead.phone}`}
-          className="flex items-center gap-2 rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700"
-        >
-          <Phone className="h-4 w-4" />
-          Call {lead.phone}
-        </a>
+        <WhatsAppButton phone={lead.phone} />
+      </div>
+
+      <div className="mb-6">
+        <LeadDetailActions lead={lead} users={users} />
       </div>
 
       <div className="mb-8 grid gap-4 sm:grid-cols-3">
@@ -148,32 +142,9 @@ export default async function LeadDetailPage({
         </div>
       )}
 
-      <div className="grid gap-8 lg:grid-cols-2">
-        <div>
-          <h2 className="mb-4 text-lg font-semibold text-slate-900">Edit Lead</h2>
-          <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-            <LeadForm
-              users={users}
-              leadId={lead.id}
-              initial={{
-                name: lead.name,
-                phone: lead.phone,
-                email: lead.email,
-                city: lead.city,
-                visa_type: lead.visa_type,
-                source: lead.source,
-                status: lead.status,
-                assigned_to: lead.assigned_to,
-                next_follow_up_at: lead.next_follow_up_at,
-                notes: lead.notes,
-              }}
-            />
-          </div>
-        </div>
-        <div>
-          <h2 className="mb-4 text-lg font-semibold text-slate-900">Activity Log</h2>
-          <ActivityLog leadId={lead.id} activities={activities} />
-        </div>
+      <div>
+        <h2 className="mb-4 text-lg font-semibold text-slate-900">Activity Log</h2>
+        <ActivityLog leadId={lead.id} activities={activities} />
       </div>
     </div>
   );

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Phone, AlertCircle } from "lucide-react";
 import { format, isBefore, startOfDay, endOfDay } from "date-fns";
+import WhatsAppButton from "@/components/WhatsAppButton";
 import { getSession } from "@/lib/auth";
 import { getLeads } from "@/lib/db";
 import { labelForVisaType, labelForStatus, statusColor } from "@/lib/constants";
@@ -58,13 +59,7 @@ export default async function FollowUpsPage() {
           <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${statusColor(lead.status)}`}>
             {labelForStatus(lead.status)}
           </span>
-          <a
-            href={`tel:${lead.phone}`}
-            className="flex items-center gap-1 rounded-lg bg-green-50 px-3 py-1.5 text-xs font-medium text-green-700 hover:bg-green-100"
-          >
-            <Phone className="h-3 w-3" />
-            Call
-          </a>
+          <WhatsAppButton phone={lead.phone} />
         </div>
       </div>
     );
@@ -78,7 +73,7 @@ export default async function FollowUpsPage() {
       </div>
 
       <div className="space-y-6">
-        <section className="rounded-xl border border-red-200 bg-white shadow-sm">
+        <section id="overdue" className="rounded-xl border border-red-200 bg-white shadow-sm scroll-mt-8">
           <div className="flex items-center gap-2 border-b border-red-100 bg-red-50 px-5 py-3">
             <AlertCircle className="h-4 w-4 text-red-600" />
             <h2 className="text-sm font-semibold text-red-800">
@@ -94,7 +89,7 @@ export default async function FollowUpsPage() {
           </div>
         </section>
 
-        <section className="rounded-xl border border-amber-200 bg-white shadow-sm">
+        <section id="due-today" className="rounded-xl border border-amber-200 bg-white shadow-sm scroll-mt-8">
           <div className="flex items-center gap-2 border-b border-amber-100 bg-amber-50 px-5 py-3">
             <Phone className="h-4 w-4 text-amber-600" />
             <h2 className="text-sm font-semibold text-amber-800">

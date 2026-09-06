@@ -12,16 +12,24 @@ import {
 } from "lucide-react";
 import type { SessionUser } from "@/lib/types";
 
-const navItems = [
+const adminNav = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/leads", label: "All Leads", icon: Users },
   { href: "/agents", label: "Agents", icon: UserCircle },
   { href: "/follow-ups", label: "Follow-ups", icon: PhoneCall },
 ];
 
+const agentNav = [
+  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/leads", label: "My Leads", icon: Users },
+  { href: "/profile", label: "My Profile", icon: UserCircle },
+  { href: "/follow-ups", label: "Follow-ups", icon: PhoneCall },
+];
+
 export default function Sidebar({ user }: { user: SessionUser }) {
   const pathname = usePathname();
   const router = useRouter();
+  const navItems = user.role === "admin" ? adminNav : agentNav;
 
   async function handleLogout() {
     await fetch("/api/auth/logout", { method: "POST" });

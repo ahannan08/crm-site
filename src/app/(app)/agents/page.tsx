@@ -1,9 +1,16 @@
+import { redirect } from "next/navigation";
 import Link from "next/link";
 import { format } from "date-fns";
 import { Mail, Phone } from "lucide-react";
+import { getSession } from "@/lib/auth";
 import { getAgents } from "@/lib/db";
 
-export default function AgentsPage() {
+export default async function AgentsPage() {
+  const session = await getSession();
+  if (session?.role === "agent") {
+    redirect("/profile");
+  }
+
   const agents = getAgents();
 
   return (

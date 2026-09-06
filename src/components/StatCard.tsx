@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { LucideIcon } from "lucide-react";
 
 interface StatCardProps {
@@ -5,13 +6,20 @@ interface StatCardProps {
   value: number | string;
   icon: LucideIcon;
   accent?: string;
+  href?: string;
 }
 
-export default function StatCard({ label, value, icon: Icon, accent = "text-indigo-600 bg-indigo-50" }: StatCardProps) {
+export default function StatCard({
+  label,
+  value,
+  icon: Icon,
+  accent = "text-indigo-600 bg-indigo-50",
+  href,
+}: StatCardProps) {
   const [iconColor, iconBg] = accent.split(" ");
 
-  return (
-    <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+  const content = (
+    <>
       <div className="flex items-start justify-between">
         <div>
           <p className="text-sm text-slate-500">{label}</p>
@@ -21,6 +29,19 @@ export default function StatCard({ label, value, icon: Icon, accent = "text-indi
           <Icon className={`h-5 w-5 ${iconColor}`} />
         </div>
       </div>
-    </div>
+    </>
   );
+
+  const className =
+    "block rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-colors hover:border-indigo-200 hover:bg-indigo-50/30";
+
+  if (href) {
+    return (
+      <Link href={href} className={className}>
+        {content}
+      </Link>
+    );
+  }
+
+  return <div className={className}>{content}</div>;
 }
