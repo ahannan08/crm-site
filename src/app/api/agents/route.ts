@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
-import { createAgent } from "@/lib/db";
+import { createAgent, stripPassword } from "@/lib/crm";
 import type { AgentStatus } from "@/lib/types";
 
 export async function POST(request: NextRequest) {
@@ -20,15 +20,14 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const agent = createAgent({
+    const agent = await createAgent(session, {
       name: name.trim(),
       email: email.trim(),
       phone: phone?.trim(),
       password: password.trim(),
       agent_status: (agent_status as AgentStatus) || "active",
     });
-    const { password: _, ...safe } = agent;
-    return NextResponse.json({ agent: safe }, { status: 201 });
+    return NextResponse.json({ agent: stripPassword(agent) }, { status: 201 });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Failed to create agent";
     return NextResponse.json({ error: message }, { status: 400 });

@@ -9,19 +9,19 @@ import {
   agentStatusColor,
   labelForAgentStatus,
 } from "@/lib/constants";
-import { getAgentLeads } from "@/lib/db";
-import type { User } from "@/lib/types";
+import type { Lead, User } from "@/lib/types";
 
 export default function AgentProfileView({
   agent,
+  leads,
   backHref,
   backLabel,
 }: {
   agent: User;
+  leads: Lead[];
   backHref?: string;
   backLabel?: string;
 }) {
-  const leads = getAgentLeads(agent.id);
 
   return (
     <div className="p-8">

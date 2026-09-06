@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
-import { createLead, getLeads, getUsers } from "@/lib/db";
+import { createLead, getLeads, getUsers, stripPassword } from "@/lib/crm";
 import type { LeadSource, LeadStatus, VisaType } from "@/lib/types";
 
 export async function GET(request: NextRequest) {
@@ -20,17 +20,18 @@ export async function GET(request: NextRequest) {
     assigned_to: params.get("assigned_to") || undefined,
     search: params.get("search") || undefined,
     period,
-    mine: session.role === "agent" ? session.id : undefined,
-    organization_id:
-      session.authMode === "supabase" && session.organizationId
-        ? session.organizationId
-        : undefined,
   };
 
-  const leads = getLeads(filters);
-  const users = getUsers().map(({ password: _, ...u }) => u);
+  const [leads, users] = await Promise.all([
+    getLeads(session, filters),
+    getUsers(session),
+  ]);
 
-  return NextResponse.json({ leads, users, role: session.role });
+  return NextResponse.json({
+    leads,
+    users: users.map(stripPassword),
+    role: session.role,
+  });
 }
 
 export async function POST(request: NextRequest) {
@@ -48,6 +49,11 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const lead = createLead(body);
-  return NextResponse.json({ lead }, { status: 201 });
+  try {
+    const lead = await createLead(session, body);
+    return NextResponse.json({ lead }, { status: 201 });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Failed to create lead";
+    return NextResponse.json({ error: message }, { status: 400 });
+  }
 }

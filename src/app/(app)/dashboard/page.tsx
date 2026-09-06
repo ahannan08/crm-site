@@ -13,7 +13,7 @@ import {
   DASHBOARD_SOURCES,
 } from "@/lib/constants";
 import { getSession } from "@/lib/auth";
-import { getDashboardStats } from "@/lib/db";
+import { getDashboardStats } from "@/lib/crm";
 import {
   Users,
   TrendingUp,
@@ -26,7 +26,7 @@ import {
 
 export default async function DashboardPage() {
   const session = await getSession();
-  const stats = getDashboardStats(session!.id, session!.role);
+  const stats = await getDashboardStats(session!);
   const todayStart = startOfDay(new Date());
 
   return (

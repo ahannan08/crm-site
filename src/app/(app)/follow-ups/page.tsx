@@ -3,12 +3,12 @@ import { Phone, AlertCircle } from "lucide-react";
 import { format, isBefore, startOfDay, endOfDay } from "date-fns";
 import WhatsAppButton from "@/components/WhatsAppButton";
 import { getSession } from "@/lib/auth";
-import { getLeads } from "@/lib/db";
+import { getLeads } from "@/lib/crm";
 import { labelForVisaType, labelForStatus, statusColor } from "@/lib/constants";
 
 export default async function FollowUpsPage() {
   const session = await getSession();
-  const allLeads = getLeads(session!.role === "agent" ? { mine: session!.id } : {});
+  const allLeads = await getLeads(session!);
   const todayStart = startOfDay(new Date());
   const todayEnd = endOfDay(new Date());
 

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
-import { getLeadById, updateLead, getActivities, getUserById } from "@/lib/db";
+import { getLeadById, updateLead, getActivities, getUserById } from "@/lib/crm";
 
 export async function GET(
   _request: NextRequest,
@@ -12,7 +12,7 @@ export async function GET(
   }
 
   const { id } = await params;
-  const lead = getLeadById(id);
+  const lead = await getLeadById(session, id);
   if (!lead) {
     return NextResponse.json({ error: "Lead not found" }, { status: 404 });
   }
@@ -21,12 +21,15 @@ export async function GET(
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const activities = getActivities(id).map((a) => ({
-    ...a,
-    user_name: getUserById(a.user_id)?.name ?? "Unknown",
-  }));
+  const activities = await getActivities(session, id);
+  const enriched = await Promise.all(
+    activities.map(async (a) => ({
+      ...a,
+      user_name: (await getUserById(session, a.user_id))?.name ?? "Unknown",
+    }))
+  );
 
-  return NextResponse.json({ lead, activities });
+  return NextResponse.json({ lead, activities: enriched });
 }
 
 export async function PATCH(
@@ -39,7 +42,7 @@ export async function PATCH(
   }
 
   const { id } = await params;
-  const lead = getLeadById(id);
+  const lead = await getLeadById(session, id);
   if (!lead) {
     return NextResponse.json({ error: "Lead not found" }, { status: 404 });
   }
@@ -49,6 +52,6 @@ export async function PATCH(
   }
 
   const body = await request.json();
-  const updated = updateLead(id, body);
+  const updated = await updateLead(session, id, body);
   return NextResponse.json({ lead: updated });
 }

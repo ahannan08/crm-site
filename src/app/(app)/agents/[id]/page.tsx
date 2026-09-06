@@ -1,6 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
-import { getUserById } from "@/lib/db";
+import { getUserById, getAgentLeads } from "@/lib/crm";
 import AgentProfileView from "@/components/AgentProfileView";
 
 export default async function AgentDetailPage({
@@ -18,12 +18,15 @@ export default async function AgentDetailPage({
     redirect("/profile");
   }
 
-  const agent = getUserById(id);
+  const agent = await getUserById(session!, id);
   if (!agent || agent.role !== "agent") notFound();
+
+  const leads = await getAgentLeads(session!, id);
 
   return (
     <AgentProfileView
       agent={agent}
+      leads={leads}
       backHref="/agents"
       backLabel="Back to agents"
     />

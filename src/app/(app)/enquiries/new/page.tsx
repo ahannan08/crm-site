@@ -1,10 +1,12 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import EnquiryForm from "@/components/EnquiryForm";
-import { getUsers } from "@/lib/db";
+import { getSession } from "@/lib/auth";
+import { getUsers, stripPassword } from "@/lib/crm";
 
-export default function NewEnquiryPage() {
-  const users = getUsers().map(({ password: _, ...u }) => u);
+export default async function NewEnquiryPage() {
+  const session = await getSession();
+  const users = (await getUsers(session!)).map(stripPassword);
   const today = new Date().toISOString().split("T")[0];
 
   return (

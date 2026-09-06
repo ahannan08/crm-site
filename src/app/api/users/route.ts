@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
-import { getUsers } from "@/lib/db";
+import { getUsers, stripPassword } from "@/lib/crm";
 
 export async function GET() {
   const session = await getSession();
@@ -8,6 +8,6 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const users = getUsers().map(({ password: _, ...u }) => u);
-  return NextResponse.json({ users });
+  const users = await getUsers(session);
+  return NextResponse.json({ users: users.map(stripPassword) });
 }

@@ -1,31 +1,41 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Phone, Mail, MapPin } from "lucide-react";
 import { format } from "date-fns";
 import LeadDetailActions from "@/components/LeadDetailActions";
 import ActivityLog from "@/components/ActivityLog";
 import WhatsAppButton from "@/components/WhatsAppButton";
-import { getLeadById, getActivities, getUsers, getUserById } from "@/lib/db";
-import {
-  labelForVisaType,
-  labelForSource,
-} from "@/lib/constants";
+import { getSession } from "@/lib/auth";
+import { getLeadById, getActivities, getUsers, getUserById, stripPassword } from "@/lib/crm";
+import { labelForVisaType, labelForSource } from "@/lib/constants";
 
 export default async function LeadDetailPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
+  const session = await getSession();
+  if (!session) redirect("/login");
+
   const { id } = await params;
-  const lead = getLeadById(id);
+  const lead = await getLeadById(session, id);
   if (!lead) notFound();
 
-  const users = getUsers().map(({ password: _, ...u }) => u);
-  const activities = getActivities(id).map((a) => ({
-    ...a,
-    user_name: getUserById(a.user_id)?.name ?? "Unknown",
-  }));
-  const assignedAgent = lead.assigned_to ? getUserById(lead.assigned_to) : null;
+  if (session.role === "agent" && lead.assigned_to !== session.id) {
+    redirect("/leads");
+  }
+
+  const users = (await getUsers(session)).map(stripPassword);
+  const rawActivities = await getActivities(session, id);
+  const activities = await Promise.all(
+    rawActivities.map(async (a) => ({
+      ...a,
+      user_name: (await getUserById(session, a.user_id))?.name ?? "Unknown",
+    }))
+  );
+  const assignedAgent = lead.assigned_to
+    ? await getUserById(session, lead.assigned_to)
+    : null;
 
   return (
     <div className="p-8">

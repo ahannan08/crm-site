@@ -3,7 +3,7 @@ import Link from "next/link";
 import { format } from "date-fns";
 import { Mail, Phone, Plus } from "lucide-react";
 import { getSession } from "@/lib/auth";
-import { getAgents } from "@/lib/db";
+import { getAgents } from "@/lib/crm";
 import { agentStatusColor, labelForAgentStatus } from "@/lib/constants";
 
 export default async function AgentsPage() {
@@ -12,7 +12,7 @@ export default async function AgentsPage() {
     redirect("/profile");
   }
 
-  const agents = getAgents();
+  const agents = await getAgents(session!);
 
   return (
     <div className="p-8">

@@ -1,10 +1,12 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import LeadForm from "@/components/LeadForm";
-import { getUsers } from "@/lib/db";
+import { getSession } from "@/lib/auth";
+import { getUsers, stripPassword } from "@/lib/crm";
 
-export default function NewLeadPage() {
-  const users = getUsers().map(({ password: _, ...u }) => u);
+export default async function NewLeadPage() {
+  const session = await getSession();
+  const users = (await getUsers(session!)).map(stripPassword);
 
   return (
     <div className="p-8">
