@@ -1,9 +1,10 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { format } from "date-fns";
-import { Mail, Phone } from "lucide-react";
+import { Mail, Phone, Plus } from "lucide-react";
 import { getSession } from "@/lib/auth";
 import { getAgents } from "@/lib/db";
+import { agentStatusColor, labelForAgentStatus } from "@/lib/constants";
 
 export default async function AgentsPage() {
   const session = await getSession();
@@ -15,11 +16,20 @@ export default async function AgentsPage() {
 
   return (
     <div className="p-8">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-slate-900">Agents</h1>
-        <p className="text-sm text-slate-500">
-          Assigned persons and the leads they handle
-        </p>
+      <div className="mb-6 flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">Agents</h1>
+          <p className="text-sm text-slate-500">
+            Assigned persons and the leads they handle
+          </p>
+        </div>
+        <Link
+          href="/agents/new"
+          className="flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+        >
+          <Plus className="h-4 w-4" />
+          Create Agent
+        </Link>
       </div>
 
       <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
@@ -32,6 +42,7 @@ export default async function AgentsPage() {
                 <th className="px-4 py-3 text-left font-medium text-slate-600">Full Name</th>
                 <th className="px-4 py-3 text-left font-medium text-slate-600">Email</th>
                 <th className="px-4 py-3 text-left font-medium text-slate-600">Phone</th>
+                <th className="px-4 py-3 text-left font-medium text-slate-600">Status</th>
                 <th className="px-4 py-3 text-left font-medium text-slate-600">Joined On</th>
                 <th className="px-4 py-3 text-left font-medium text-slate-600">Leads</th>
                 <th className="px-4 py-3"></th>
@@ -66,6 +77,13 @@ export default async function AgentsPage() {
                     ) : (
                       "—"
                     )}
+                  </td>
+                  <td className="px-4 py-3">
+                    <span
+                      className={`rounded-full px-2 py-0.5 text-xs font-medium ${agentStatusColor(agent.agent_status ?? "active")}`}
+                    >
+                      {labelForAgentStatus(agent.agent_status ?? "active")}
+                    </span>
                   </td>
                   <td className="px-4 py-3 text-slate-600">
                     {format(new Date(agent.joined_at), "dd MMM yyyy")}

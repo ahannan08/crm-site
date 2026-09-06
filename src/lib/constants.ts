@@ -1,4 +1,4 @@
-import type { LeadSource, LeadStatus, MaritalStatus, VisaType } from "./types";
+import type { LeadSource, LeadStatus, MaritalStatus, AgentStatus, VisaType } from "./types";
 
 export const VISA_TYPES: { value: VisaType; label: string }[] = [
   { value: "visit", label: "Visit Visa" },
@@ -31,6 +31,19 @@ export const MARITAL_STATUSES: { value: MaritalStatus; label: string }[] = [
   { value: "widowed", label: "Widowed" },
   { value: "other", label: "Other" },
 ];
+
+export const AGENT_STATUSES: { value: AgentStatus; label: string; color: string }[] = [
+  { value: "active", label: "Active", color: "bg-green-100 text-green-800" },
+  { value: "inactive", label: "Inactive", color: "bg-slate-100 text-slate-600" },
+];
+
+export function agentStatusColor(status: string): string {
+  return AGENT_STATUSES.find((s) => s.value === status)?.color ?? "bg-gray-100 text-gray-800";
+}
+
+export function labelForAgentStatus(status: string): string {
+  return AGENT_STATUSES.find((s) => s.value === status)?.label ?? status;
+}
 
 export const LEAD_STATUSES: { value: LeadStatus; label: string; color: string }[] = [
   { value: "new", label: "New", color: "bg-blue-100 text-blue-800" },

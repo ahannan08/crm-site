@@ -16,6 +16,7 @@
       "phone": "+919876543211",
       "password": "agent123",
       "role": "agent",
+      "agent_status": "active",
       "joined_at": "2026-02-15T09:00:00.000Z"
     },
     {
@@ -25,6 +26,7 @@
       "phone": "+919876543212",
       "password": "agent123",
       "role": "agent",
+      "agent_status": "inactive",
       "joined_at": "2026-03-10T09:00:00.000Z"
     }
   ],

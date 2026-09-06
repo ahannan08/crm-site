@@ -31,7 +31,9 @@ export default function LeadForm({ users, initial, leadId }: LeadFormProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const agents = users.filter((u) => u.role === "agent" || u.role === "admin");
+  const agents = users.filter(
+    (u) => (u.role === "agent" || u.role === "admin") && (u.role === "admin" || u.agent_status === "active")
+  );
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();

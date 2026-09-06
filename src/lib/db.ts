@@ -20,6 +20,7 @@ import type {
   MaritalStatus,
   User,
   VisaType,
+  AgentStatus,
 } from "./types";
 import { bucketSourceForDashboard, DASHBOARD_SOURCES } from "./constants";
 
@@ -43,6 +44,7 @@ function normalizeUser(raw: Partial<User> & Pick<User, "id" | "name" | "email" |
     phone: raw.phone ?? "",
     password: raw.password,
     role: raw.role,
+    agent_status: raw.role === "agent" ? (raw.agent_status ?? "active") : undefined,
     joined_at: raw.joined_at ?? new Date().toISOString(),
   };
 }
@@ -126,6 +128,38 @@ export function getAgents(): AgentSummary[] {
 
 export function getAgentLeads(agentId: string): Lead[] {
   return getLeads({ assigned_to: agentId });
+}
+
+export function getActiveAgentsCount(): number {
+  return ensureDb().users.filter((u) => u.role === "agent" && u.agent_status === "active").length;
+}
+
+export interface CreateAgentInput {
+  name: string;
+  email: string;
+  phone?: string;
+  password: string;
+  agent_status?: AgentStatus;
+}
+
+export function createAgent(input: CreateAgentInput): User {
+  const db = ensureDb();
+  if (db.users.some((u) => u.email === input.email)) {
+    throw new Error("Email already in use");
+  }
+  const agent = normalizeUser({
+    id: randomUUID(),
+    name: input.name,
+    email: input.email,
+    phone: input.phone ?? "",
+    password: input.password,
+    role: "agent",
+    agent_status: input.agent_status ?? "active",
+    joined_at: new Date().toISOString(),
+  });
+  db.users.push(agent);
+  saveDb(db);
+  return agent;
 }
 
 export interface LeadFilters {
@@ -378,5 +412,6 @@ export function getDashboardStats(userId?: string, role?: string): DashboardStat
         new Date(a.next_follow_up_at!).getTime() -
         new Date(b.next_follow_up_at!).getTime()
     ),
+    activeAgents: getActiveAgentsCount(),
   };
 }

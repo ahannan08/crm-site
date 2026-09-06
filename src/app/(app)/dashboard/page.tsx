@@ -21,6 +21,7 @@ import {
   AlertCircle,
   Inbox,
   Phone,
+  UserCheck,
 } from "lucide-react";
 
 export default async function DashboardPage() {
@@ -47,7 +48,7 @@ export default async function DashboardPage() {
         </Link>
       </div>
 
-      <div className="mb-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+      <div className="mb-3 grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-5">
         <StatCard label="Total Leads" value={stats.totalLeads} icon={Users} href="/leads" />
         <StatCard
           label="New Enquiries"
@@ -73,7 +74,7 @@ export default async function DashboardPage() {
         <WonLostCard wonCount={stats.wonCount} lostCount={stats.lostCount} />
       </div>
 
-      <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:max-w-md">
+      <div className="mb-6 grid grid-cols-2 gap-2 sm:grid-cols-3 md:max-w-xl">
         <StatCard
           label="This Week"
           value={stats.leadsThisWeek}
@@ -88,6 +89,15 @@ export default async function DashboardPage() {
           accent="text-blue-600 bg-blue-50"
           href="/leads?period=month"
         />
+        {session!.role === "admin" && (
+          <StatCard
+            label="Active Agents"
+            value={stats.activeAgents}
+            icon={UserCheck}
+            accent="text-teal-600 bg-teal-50"
+            href="/agents"
+          />
+        )}
       </div>
 
       <div className="mb-8 grid gap-6 lg:grid-cols-3">

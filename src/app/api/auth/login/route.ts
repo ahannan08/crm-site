@@ -14,6 +14,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Invalid email or password" }, { status: 401 });
   }
 
+  if (user.role === "agent" && user.agent_status === "inactive") {
+    return NextResponse.json({ error: "Your account is inactive. Contact admin." }, { status: 403 });
+  }
+
   await setSession({
     id: user.id,
     name: user.name,

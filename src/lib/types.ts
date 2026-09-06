@@ -20,6 +20,8 @@ export type LeadStatus =
 
 export type UserRole = "admin" | "agent";
 
+export type AgentStatus = "active" | "inactive";
+
 export type MaritalStatus = "single" | "married" | "divorced" | "widowed" | "other";
 
 export type ActivityType = "call" | "note" | "status_change";
@@ -31,6 +33,7 @@ export interface User {
   phone: string;
   password: string;
   role: UserRole;
+  agent_status?: AgentStatus;
   joined_at: string;
 }
 
@@ -101,4 +104,5 @@ export interface DashboardStats {
   byStatus: Record<string, number>;
   recentLeads: Lead[];
   dueFollowUps: Lead[];
+  activeAgents: number;
 }

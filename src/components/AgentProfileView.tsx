@@ -6,6 +6,8 @@ import {
   labelForStatus,
   labelForVisaType,
   statusColor,
+  agentStatusColor,
+  labelForAgentStatus,
 } from "@/lib/constants";
 import { getAgentLeads } from "@/lib/db";
 import type { User } from "@/lib/types";
@@ -34,6 +36,13 @@ export default function AgentProfileView({
 
       <div className="mb-8 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
         <h1 className="text-2xl font-bold text-slate-900">{agent.name}</h1>
+        {agent.role === "agent" && (
+          <span
+            className={`mt-2 inline-block rounded-full px-2.5 py-1 text-xs font-medium ${agentStatusColor(agent.agent_status ?? "active")}`}
+          >
+            {labelForAgentStatus(agent.agent_status ?? "active")}
+          </span>
+        )}
         <div className="mt-4 grid gap-4 sm:grid-cols-3">
           <div>
             <p className="text-xs text-slate-500">Email</p>

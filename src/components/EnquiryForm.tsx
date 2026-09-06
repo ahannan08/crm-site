@@ -31,7 +31,9 @@ export default function EnquiryForm({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const agents = users.filter((u) => u.role === "agent" || u.role === "admin");
+  const agents = users.filter(
+    (u) => (u.role === "agent" || u.role === "admin") && (u.role === "admin" || u.agent_status === "active")
+  );
   const today = defaultDate ?? new Date().toISOString().split("T")[0];
   const isEdit = Boolean(leadId);
 
