@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { createLead, getLeads, getUsers, stripPassword } from "@/lib/crm";
-import type { LeadSource, LeadStatus, VisaType } from "@/lib/types";
+import type { LeadDisposition, LeadSource, LeadStatus, VisaType } from "@/lib/types";
 
 export async function GET(request: NextRequest) {
   const session = await getSession();
@@ -17,6 +17,7 @@ export async function GET(request: NextRequest) {
     visa_type: (params.get("visa_type") as VisaType) || undefined,
     source: (params.get("source") as LeadSource) || undefined,
     status: (params.get("status") as LeadStatus) || undefined,
+    disposition: (params.get("disposition") as LeadDisposition) || undefined,
     assigned_to: params.get("assigned_to") || undefined,
     search: params.get("search") || undefined,
     period,

@@ -1,16 +1,18 @@
 import Link from "next/link";
 import { Plus } from "lucide-react";
-import { format, isBefore, startOfDay } from "date-fns";
+import { format, isBefore, startOfDay, startOfMonth } from "date-fns";
 import StatCard from "@/components/StatCard";
 import WonLostCard from "@/components/WonLostCard";
 import WhatsAppButton from "@/components/WhatsAppButton";
 import BarChart from "@/components/BarChart";
+import DashboardDateFilter from "@/components/DashboardDateFilter";
 import {
   labelForSource,
-  labelForVisaType,
-  labelForStatus,
-  statusColor,
+  labelForDisposition,
+  labelForServiceType,
+  dispositionColor,
   DASHBOARD_SOURCES,
+  DISPOSITIONS,
 } from "@/lib/constants";
 import { getSession } from "@/lib/auth";
 import { getDashboardStats } from "@/lib/crm";
@@ -24,17 +26,31 @@ import {
   UserCheck,
 } from "lucide-react";
 
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ from?: string; to?: string }>;
+}) {
   const session = await getSession();
-  const stats = await getDashboardStats(session!);
+  const params = await searchParams;
+  const now = new Date();
+  const defaultFrom = startOfMonth(now).toISOString().split("T")[0];
+  const defaultTo = now.toISOString().split("T")[0];
+  const from = params.from ?? defaultFrom;
+  const to = params.to ?? defaultTo;
+
+  const stats = await getDashboardStats(session!, { from, to });
   const todayStart = startOfDay(new Date());
 
   return (
     <div className="p-8">
-      <div className="mb-8 flex items-start justify-between">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Dashboard</h1>
-          <p className="text-sm text-slate-500">
+          <div className="flex flex-wrap items-center gap-3">
+            <h1 className="text-2xl font-bold text-slate-900">Dashboard</h1>
+            <DashboardDateFilter from={from} to={to} />
+          </div>
+          <p className="mt-1 text-sm text-slate-500">
             Track leads, follow-ups, and conversions
             {session!.role === "agent" ? " (your assigned leads)" : ""}
           </p>
@@ -109,15 +125,16 @@ export default async function DashboardPage() {
           color="bg-indigo-500"
         />
         <BarChart
-          title="Leads by Visa Type"
-          data={stats.byVisaType}
-          labelFn={labelForVisaType}
+          title="Leads by Service Type"
+          data={stats.byServiceType}
+          labelFn={(v) => v}
           color="bg-emerald-500"
         />
         <BarChart
-          title="Leads by Status"
-          data={stats.byStatus}
-          labelFn={labelForStatus}
+          title="Leads by Disposition"
+          data={stats.byDisposition}
+          labelFn={labelForDisposition}
+          order={DISPOSITIONS.map((d) => d.value)}
           color="bg-amber-500"
         />
       </div>
@@ -145,7 +162,7 @@ export default async function DashboardPage() {
                       {lead.name}
                     </Link>
                     <p className="text-xs text-slate-500">
-                      {labelForVisaType(lead.visa_type)} ·{" "}
+                      {labelForServiceType(lead)} ·{" "}
                       {lead.next_follow_up_at
                         ? format(new Date(lead.next_follow_up_at), "dd MMM, h:mm a")
                         : ""}
@@ -181,8 +198,10 @@ export default async function DashboardPage() {
                     {labelForSource(lead.source)} · {format(new Date(lead.created_at), "dd MMM yyyy")}
                   </p>
                 </div>
-                <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${statusColor(lead.status)}`}>
-                  {labelForStatus(lead.status)}
+                <span
+                  className={`rounded-full px-2 py-0.5 text-xs font-medium ${dispositionColor(lead.disposition)}`}
+                >
+                  {labelForDisposition(lead.disposition)}
                 </span>
               </div>
             ))}

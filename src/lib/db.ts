@@ -17,13 +17,22 @@ import type {
   Lead,
   LeadSource,
   LeadStatus,
+  LeadDisposition,
   MaritalStatus,
   User,
   VisaType,
   AgentStatus,
   NotificationLog,
+  DashboardDateRange,
 } from "./types";
-import { bucketSourceForDashboard, DASHBOARD_SOURCES } from "./constants";
+import {
+  bucketSourceForDashboard,
+  DASHBOARD_SOURCES,
+  DISPOSITIONS,
+  isLeadClosed,
+  labelForServiceType,
+  statusFromDisposition,
+} from "./constants";
 
 const DATA_DIR = join(process.cwd(), "data");
 const DB_PATH = join(DATA_DIR, "db.json");
@@ -61,6 +70,10 @@ function normalizeLead(raw: Partial<Lead> & Pick<Lead, "id" | "name" | "phone">)
     age: raw.age ?? null,
     city: raw.city ?? "",
     visa_type: raw.visa_type ?? "visit",
+    service_type: raw.service_type ?? "",
+    disposition: (raw.disposition ?? "no_answer") as LeadDisposition,
+    cva_score: raw.cva_score ?? "",
+    lr_score: raw.lr_score ?? null,
     source: normalizeSource(raw.source ?? "walk_in"),
     marital_status: (raw.marital_status ?? "") as MaritalStatus | "",
     kids: raw.kids ?? null,
@@ -168,6 +181,7 @@ export function createAgent(input: CreateAgentInput): User {
 
 export interface LeadFilters {
   visa_type?: VisaType;
+  disposition?: LeadDisposition;
   source?: LeadSource;
   status?: LeadStatus;
   assigned_to?: string;
@@ -195,6 +209,9 @@ export function getLeads(filters: LeadFilters = {}): Lead[] {
   }
   if (filters.status) {
     leads = leads.filter((l) => l.status === filters.status);
+  }
+  if (filters.disposition) {
+    leads = leads.filter((l) => l.disposition === filters.disposition);
   }
   if (filters.assigned_to) {
     leads = leads.filter((l) => l.assigned_to === filters.assigned_to);
@@ -235,6 +252,10 @@ export interface CreateLeadInput {
   age?: number | null;
   city?: string;
   visa_type?: VisaType;
+  service_type?: string;
+  disposition?: LeadDisposition;
+  cva_score?: string;
+  lr_score?: number | null;
   source?: LeadSource;
   marital_status?: MaritalStatus | "";
   kids?: number | null;
@@ -271,6 +292,10 @@ export function createLead(input: CreateLeadInput): Lead {
     age: input.age ?? null,
     city: input.city ?? "",
     visa_type: input.visa_type ?? "visit",
+    service_type: input.service_type ?? "",
+    disposition: input.disposition ?? "no_answer",
+    cva_score: input.cva_score ?? "",
+    lr_score: input.lr_score ?? null,
     source: input.source ?? "walk_in",
     marital_status: input.marital_status ?? "",
     kids: input.kids ?? null,
@@ -285,7 +310,7 @@ export function createLead(input: CreateLeadInput): Lead {
     savings: input.savings ?? "",
     itr: input.itr ?? "",
     property_details: input.property_details ?? "",
-    status: input.status ?? "new",
+    status: input.status ?? statusFromDisposition(input.disposition ?? "no_answer"),
     assigned_to: input.assigned_to ?? null,
     next_follow_up_at: input.next_follow_up_at ?? null,
     whatsapp_reminders_enabled: input.whatsapp_reminders_enabled ?? true,
@@ -307,6 +332,10 @@ export interface UpdateLeadInput {
   age?: number | null;
   city?: string;
   visa_type?: VisaType;
+  service_type?: string;
+  disposition?: LeadDisposition;
+  cva_score?: string;
+  lr_score?: number | null;
   source?: LeadSource;
   marital_status?: MaritalStatus | "";
   kids?: number | null;
@@ -333,9 +362,11 @@ export function updateLead(id: string, input: UpdateLeadInput): Lead | null {
   const index = db.leads.findIndex((l) => l.id === id);
   if (index === -1) return null;
 
+  const nextDisposition = input.disposition ?? db.leads[index].disposition;
   db.leads[index] = {
     ...db.leads[index],
     ...input,
+    status: input.status ?? (input.disposition ? statusFromDisposition(nextDisposition) : db.leads[index].status),
     updated_at: new Date().toISOString(),
   };
   saveDb(db);
@@ -371,8 +402,30 @@ export function createActivity(
   return activity;
 }
 
-export function getDashboardStats(userId?: string, role?: string): DashboardStats {
-  const allLeads = getLeads(role === "agent" && userId ? { mine: userId } : {});
+function defaultDashboardDateRange(): DashboardDateRange {
+  const now = new Date();
+  const from = startOfMonth(now).toISOString().split("T")[0];
+  const to = now.toISOString().split("T")[0];
+  return { from, to };
+}
+
+function leadInDateRange(lead: Lead, range: DashboardDateRange): boolean {
+  const day = lead.enquiry_date?.slice(0, 10) ?? lead.created_at.slice(0, 10);
+  return day >= range.from && day <= range.to;
+}
+
+export function getDashboardStats(
+  userId?: string,
+  role?: string,
+  dateRange?: Partial<DashboardDateRange>
+): DashboardStats {
+  const range: DashboardDateRange = {
+    ...defaultDashboardDateRange(),
+    ...dateRange,
+  };
+
+  const allLeadsRaw = getLeads(role === "agent" && userId ? { mine: userId } : {});
+  const allLeads = allLeadsRaw.filter((l) => leadInDateRange(l, range));
   const now = new Date();
   const weekStart = startOfWeek(now, { weekStartsOn: 1 });
   const monthStart = startOfMonth(now);
@@ -383,17 +436,24 @@ export function getDashboardStats(userId?: string, role?: string): DashboardStat
     DASHBOARD_SOURCES.map((s) => [s.value, 0])
   );
   const byVisaType: Record<string, number> = {};
+  const byServiceType: Record<string, number> = {};
   const byStatus: Record<string, number> = {};
+  const byDisposition: Record<string, number> = Object.fromEntries(
+    DISPOSITIONS.map((d) => [d.value, 0])
+  );
 
   for (const lead of allLeads) {
     const bucket = bucketSourceForDashboard(lead.source);
     bySource[bucket] = (bySource[bucket] ?? 0) + 1;
     byVisaType[lead.visa_type] = (byVisaType[lead.visa_type] ?? 0) + 1;
+    const serviceLabel = labelForServiceType(lead);
+    byServiceType[serviceLabel] = (byServiceType[serviceLabel] ?? 0) + 1;
     byStatus[lead.status] = (byStatus[lead.status] ?? 0) + 1;
+    byDisposition[lead.disposition] = (byDisposition[lead.disposition] ?? 0) + 1;
   }
 
   const dueFollowUps = allLeads.filter((l) => {
-    if (!l.next_follow_up_at || l.status === "won" || l.status === "lost") return false;
+    if (!l.next_follow_up_at || isLeadClosed(l)) return false;
     const d = new Date(l.next_follow_up_at);
     return isBefore(d, todayEnd);
   });
@@ -404,19 +464,25 @@ export function getDashboardStats(userId?: string, role?: string): DashboardStat
     leadsThisWeek: allLeads.filter((l) => isAfter(new Date(l.created_at), weekStart)).length,
     leadsThisMonth: allLeads.filter((l) => isAfter(new Date(l.created_at), monthStart)).length,
     followUpsDueToday: allLeads.filter((l) => {
-      if (!l.next_follow_up_at || l.status === "won" || l.status === "lost") return false;
+      if (!l.next_follow_up_at || isLeadClosed(l)) return false;
       const d = new Date(l.next_follow_up_at);
       return d >= todayStart && d <= todayEnd;
     }).length,
     followUpsOverdue: allLeads.filter((l) => {
-      if (!l.next_follow_up_at || l.status === "won" || l.status === "lost") return false;
+      if (!l.next_follow_up_at || isLeadClosed(l)) return false;
       return isBefore(new Date(l.next_follow_up_at), todayStart);
     }).length,
-    wonCount: allLeads.filter((l) => l.status === "won").length,
-    lostCount: allLeads.filter((l) => l.status === "lost").length,
+    wonCount: allLeads.filter(
+      (l) => l.status === "won" || l.disposition === "converted"
+    ).length,
+    lostCount: allLeads.filter(
+      (l) => l.status === "lost" || l.disposition === "lost"
+    ).length,
     bySource,
     byVisaType,
+    byServiceType,
     byStatus,
+    byDisposition,
     recentLeads: allLeads.slice(0, 5),
     dueFollowUps: dueFollowUps.sort(
       (a, b) =>
@@ -424,16 +490,13 @@ export function getDashboardStats(userId?: string, role?: string): DashboardStat
         new Date(b.next_follow_up_at!).getTime()
     ),
     activeAgents: getActiveAgentsCount(),
+    dateRange: range,
   };
 }
 
 export function getMockLeadsForWhatsAppReminders(): Lead[] {
   return ensureDb().leads.filter(
-    (l) =>
-      l.whatsapp_reminders_enabled &&
-      l.next_follow_up_at &&
-      l.status !== "won" &&
-      l.status !== "lost"
+    (l) => l.whatsapp_reminders_enabled && l.next_follow_up_at && !isLeadClosed(l)
   );
 }
 

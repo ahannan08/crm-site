@@ -8,13 +8,22 @@ import {
 } from "date-fns";
 import { createAdminClient } from "./admin";
 import { sendAgentWelcomeEmail } from "../email";
-import { bucketSourceForDashboard, DASHBOARD_SOURCES } from "../constants";
+import {
+  bucketSourceForDashboard,
+  DASHBOARD_SOURCES,
+  DISPOSITIONS,
+  isLeadClosed,
+  labelForServiceType,
+  statusFromDisposition,
+} from "../constants";
 import type {
   Activity,
   ActivityType,
   AgentStatus,
+  DashboardDateRange,
   DashboardStats,
   Lead,
+  LeadDisposition,
   LeadSource,
   LeadStatus,
   MaritalStatus,
@@ -62,6 +71,10 @@ function mapLeadRow(row: Record<string, unknown>): Lead {
     age: (row.age as number | null) ?? null,
     city: (row.city as string) ?? "",
     visa_type: row.visa_type as VisaType,
+    service_type: (row.service_type as string) ?? "",
+    disposition: ((row.disposition as string) ?? "no_answer") as Lead["disposition"],
+    cva_score: (row.cva_score as string) ?? "",
+    lr_score: (row.lr_score as number | null) ?? null,
     source: row.source as LeadSource,
     marital_status: ((row.marital_status as string | null) ?? "") as MaritalStatus | "",
     kids: (row.kids as number | null) ?? null,
@@ -97,6 +110,10 @@ function leadToInsert(orgId: string, input: CreateLeadInput) {
     age: input.age ?? null,
     city: input.city ?? "",
     visa_type: input.visa_type ?? "visit",
+    service_type: input.service_type ?? "",
+    disposition: input.disposition ?? "no_answer",
+    cva_score: input.cva_score ?? "",
+    lr_score: input.lr_score ?? null,
     source: input.source ?? "walk_in",
     marital_status: input.marital_status || null,
     kids: input.kids ?? null,
@@ -111,7 +128,7 @@ function leadToInsert(orgId: string, input: CreateLeadInput) {
     savings: input.savings ?? "",
     itr: input.itr ?? "",
     property_details: input.property_details ?? "",
-    status: input.status ?? "new",
+    status: input.status ?? statusFromDisposition(input.disposition ?? "no_answer"),
     assigned_to: input.assigned_to ?? null,
     next_follow_up_at: input.next_follow_up_at ?? null,
     whatsapp_reminders_enabled: input.whatsapp_reminders_enabled ?? true,
@@ -135,6 +152,9 @@ function applyLeadFilters(leads: Lead[], filters: LeadFilters): Lead[] {
   }
   if (filters.status) {
     result = result.filter((l) => l.status === filters.status);
+  }
+  if (filters.disposition) {
+    result = result.filter((l) => l.disposition === filters.disposition);
   }
   if (filters.assigned_to) {
     result = result.filter((l) => l.assigned_to === filters.assigned_to);
@@ -268,6 +288,9 @@ export async function updateLead(
     updated_at: new Date().toISOString(),
   };
   if (input.marital_status === "") payload.marital_status = null;
+  if (input.disposition) {
+    payload.status = input.status ?? statusFromDisposition(input.disposition);
+  }
 
   const { data, error } = await admin
     .from("leads")
@@ -331,12 +354,31 @@ export async function getActiveAgentsCount(orgId: string): Promise<number> {
   return count ?? 0;
 }
 
+function defaultDashboardDateRange(): DashboardDateRange {
+  const now = new Date();
+  const from = startOfMonth(now).toISOString().split("T")[0];
+  const to = now.toISOString().split("T")[0];
+  return { from, to };
+}
+
+function leadInDateRange(lead: Lead, range: DashboardDateRange): boolean {
+  const day = lead.enquiry_date?.slice(0, 10) ?? lead.created_at.slice(0, 10);
+  return day >= range.from && day <= range.to;
+}
+
 export async function getDashboardStats(
   orgId: string,
   userId: string,
-  role: string
+  role: string,
+  dateRange?: Partial<DashboardDateRange>
 ): Promise<DashboardStats> {
-  const allLeads = await getLeads(orgId, role === "agent" ? { mine: userId } : {});
+  const range: DashboardDateRange = {
+    ...defaultDashboardDateRange(),
+    ...dateRange,
+  };
+
+  const allLeadsRaw = await getLeads(orgId, role === "agent" ? { mine: userId } : {});
+  const allLeads = allLeadsRaw.filter((l) => leadInDateRange(l, range));
   const now = new Date();
   const weekStart = startOfWeek(now, { weekStartsOn: 1 });
   const monthStart = startOfMonth(now);
@@ -347,17 +389,24 @@ export async function getDashboardStats(
     DASHBOARD_SOURCES.map((s) => [s.value, 0])
   );
   const byVisaType: Record<string, number> = {};
+  const byServiceType: Record<string, number> = {};
   const byStatus: Record<string, number> = {};
+  const byDisposition: Record<string, number> = Object.fromEntries(
+    DISPOSITIONS.map((d) => [d.value, 0])
+  );
 
   for (const lead of allLeads) {
     const bucket = bucketSourceForDashboard(lead.source);
     bySource[bucket] = (bySource[bucket] ?? 0) + 1;
     byVisaType[lead.visa_type] = (byVisaType[lead.visa_type] ?? 0) + 1;
+    const serviceLabel = labelForServiceType(lead);
+    byServiceType[serviceLabel] = (byServiceType[serviceLabel] ?? 0) + 1;
     byStatus[lead.status] = (byStatus[lead.status] ?? 0) + 1;
+    byDisposition[lead.disposition] = (byDisposition[lead.disposition] ?? 0) + 1;
   }
 
   const dueFollowUps = allLeads.filter((l) => {
-    if (!l.next_follow_up_at || l.status === "won" || l.status === "lost") return false;
+    if (!l.next_follow_up_at || isLeadClosed(l)) return false;
     return isBefore(new Date(l.next_follow_up_at), todayEnd);
   });
 
@@ -367,25 +416,32 @@ export async function getDashboardStats(
     leadsThisWeek: allLeads.filter((l) => isAfter(new Date(l.created_at), weekStart)).length,
     leadsThisMonth: allLeads.filter((l) => isAfter(new Date(l.created_at), monthStart)).length,
     followUpsDueToday: allLeads.filter((l) => {
-      if (!l.next_follow_up_at || l.status === "won" || l.status === "lost") return false;
+      if (!l.next_follow_up_at || isLeadClosed(l)) return false;
       const d = new Date(l.next_follow_up_at);
       return d >= todayStart && d <= todayEnd;
     }).length,
     followUpsOverdue: allLeads.filter((l) => {
-      if (!l.next_follow_up_at || l.status === "won" || l.status === "lost") return false;
+      if (!l.next_follow_up_at || isLeadClosed(l)) return false;
       return isBefore(new Date(l.next_follow_up_at), todayStart);
     }).length,
-    wonCount: allLeads.filter((l) => l.status === "won").length,
-    lostCount: allLeads.filter((l) => l.status === "lost").length,
+    wonCount: allLeads.filter(
+      (l) => l.status === "won" || l.disposition === "converted"
+    ).length,
+    lostCount: allLeads.filter(
+      (l) => l.status === "lost" || l.disposition === "lost"
+    ).length,
     bySource,
     byVisaType,
+    byServiceType,
     byStatus,
+    byDisposition,
     recentLeads: allLeads.slice(0, 5),
     dueFollowUps: dueFollowUps.sort(
       (a, b) =>
         new Date(a.next_follow_up_at!).getTime() - new Date(b.next_follow_up_at!).getTime()
     ),
     activeAgents: await getActiveAgentsCount(orgId),
+    dateRange: range,
   };
 }
 

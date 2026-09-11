@@ -7,6 +7,16 @@ create type registration_status as enum ('pending', 'approved', 'rejected');
 create type visa_type as enum ('visit', 'student', 'business');
 create type lead_source as enum ('meta', 'justdial', 'walk_in', 'google_ads', 'website', 'referral', 'other');
 create type lead_status as enum ('new', 'contacted', 'interested', 'documents_pending', 'applied', 'won', 'lost');
+create type lead_disposition as enum (
+  'no_answer',
+  'follow_up',
+  'visited',
+  'lost',
+  'converted',
+  'documentation',
+  'visa_in_process',
+  'meeting_booked'
+);
 create type activity_type as enum ('call', 'note', 'status_change');
 create type marital_status as enum ('single', 'married', 'divorced', 'widowed', 'other');
 
@@ -67,6 +77,10 @@ create table leads (
   age int,
   city text not null default '',
   visa_type visa_type not null default 'visit',
+  service_type text not null default '',
+  disposition lead_disposition not null default 'no_answer',
+  cva_score text not null default '',
+  lr_score smallint check (lr_score is null or (lr_score >= 1 and lr_score <= 5)),
   source lead_source not null default 'walk_in',
   marital_status marital_status,
   kids int,
@@ -94,6 +108,7 @@ create index leads_organization_id_idx on leads(organization_id);
 create index leads_status_idx on leads(status);
 create index leads_assigned_to_idx on leads(assigned_to);
 create index leads_next_follow_up_idx on leads(next_follow_up_at);
+create index leads_disposition_idx on leads(disposition);
 
 -- Activity log
 create table activities (

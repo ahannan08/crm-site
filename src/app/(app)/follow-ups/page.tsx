@@ -4,7 +4,12 @@ import { format, isBefore, startOfDay, endOfDay } from "date-fns";
 import WhatsAppButton from "@/components/WhatsAppButton";
 import { getSession } from "@/lib/auth";
 import { getLeads } from "@/lib/crm";
-import { labelForVisaType, labelForStatus, statusColor } from "@/lib/constants";
+import {
+  labelForServiceType,
+  labelForDisposition,
+  dispositionColor,
+  isLeadClosed,
+} from "@/lib/constants";
 
 export default async function FollowUpsPage() {
   const session = await getSession();
@@ -12,7 +17,7 @@ export default async function FollowUpsPage() {
   const todayStart = startOfDay(new Date());
   const todayEnd = endOfDay(new Date());
 
-  const activeLeads = allLeads.filter((l) => l.status !== "won" && l.status !== "lost");
+  const activeLeads = allLeads.filter((l) => !isLeadClosed(l));
 
   const dueToday = activeLeads.filter((l) => {
     if (!l.next_follow_up_at) return false;
@@ -44,7 +49,7 @@ export default async function FollowUpsPage() {
             {lead.name}
           </Link>
           <p className="mt-0.5 text-xs text-slate-500">
-            {labelForVisaType(lead.visa_type)} · {lead.phone}
+            {labelForServiceType(lead)} · {lead.phone}
             {lead.next_follow_up_at && (
               <> · {format(new Date(lead.next_follow_up_at), "dd MMM, h:mm a")}</>
             )}
@@ -56,8 +61,8 @@ export default async function FollowUpsPage() {
               {badge}
             </span>
           )}
-          <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${statusColor(lead.status)}`}>
-            {labelForStatus(lead.status)}
+          <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${dispositionColor(lead.disposition)}`}>
+            {labelForDisposition(lead.disposition)}
           </span>
           <WhatsAppButton phone={lead.phone} />
         </div>

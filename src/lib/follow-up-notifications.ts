@@ -1,4 +1,4 @@
-import { labelForVisaType } from "./constants";
+import { isLeadClosed, labelForServiceType } from "./constants";
 import {
   addMockNotificationLog,
   getMockLeadsForWhatsAppReminders,
@@ -33,7 +33,7 @@ function buildTemplateParams(lead: Lead, agentName: string): string[] {
   return [
     lead.name,
     lead.phone,
-    labelForVisaType(lead.visa_type),
+    labelForServiceType(lead),
     lead.country_of_choice || "—",
     lead.next_follow_up_at ? formatFollowUpDateTime(lead.next_follow_up_at) : "—",
     agentName,
@@ -115,7 +115,7 @@ async function runSupabaseNotifications(): Promise<FollowUpNotificationRunResult
   }
 
   const eligible = ((leads ?? []) as (Lead & { organization_id: string })[]).filter(
-    (l) => l.status !== "won" && l.status !== "lost"
+    (l) => !isLeadClosed(l)
   );
   result.scanned = eligible.length;
 

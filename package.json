@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "seed:agency": "node scripts/seed-demo-agency.mjs"
+    "seed:agency": "node scripts/seed-demo-agency.mjs",
+    "migrate:lead-fields": "node scripts/run-lead-fields-migration.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.5",
@@ -25,6 +26,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.3.4",
+    "pg": "^8.23.0",
     "tailwindcss": "^4",
     "typescript": "^5"
   }

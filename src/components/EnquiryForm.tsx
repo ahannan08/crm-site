@@ -2,13 +2,16 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import StarRating from "@/components/StarRating";
 import {
-  VISA_TYPES,
+  DISPOSITIONS,
+  DISPOSITIONS_REQUIRING_SCHEDULE,
   LEAD_SOURCES,
-  LEAD_STATUSES,
   MARITAL_STATUSES,
+  SERVICE_TYPE_SUGGESTIONS,
+  statusFromDisposition,
 } from "@/lib/constants";
-import type { Lead, LeadSource, LeadStatus, MaritalStatus, User, VisaType } from "@/lib/types";
+import type { Lead, LeadDisposition, LeadSource, MaritalStatus, User } from "@/lib/types";
 
 interface EnquiryFormProps {
   users: Omit<User, "password">[];
@@ -30,12 +33,17 @@ export default function EnquiryForm({
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [disposition, setDisposition] = useState<LeadDisposition>(
+    initial?.disposition ?? "no_answer"
+  );
+  const [lrScore, setLrScore] = useState<number | null>(initial?.lr_score ?? null);
 
   const agents = users.filter(
     (u) => (u.role === "agent" || u.role === "admin") && (u.role === "admin" || u.agent_status === "active")
   );
   const today = defaultDate ?? new Date().toISOString().split("T")[0];
   const isEdit = Boolean(leadId);
+  const showSchedule = DISPOSITIONS_REQUIRING_SCHEDULE.includes(disposition);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -45,6 +53,9 @@ export default function EnquiryForm({
     const form = new FormData(e.currentTarget);
     const kidsRaw = form.get("kids") as string;
     const ageRaw = form.get("age") as string;
+    const dispositionValue = form.get("disposition") as LeadDisposition;
+    const scheduleRaw = form.get("next_follow_up_at") as string;
+    const lrRaw = form.get("lr_score") as string;
 
     const body = {
       enquiry_date: form.get("enquiry_date") as string,
@@ -54,7 +65,11 @@ export default function EnquiryForm({
       name: form.get("name") as string,
       age: ageRaw ? Number(ageRaw) : null,
       city: form.get("city") as string,
-      visa_type: form.get("visa_type") as VisaType,
+      service_type: (form.get("service_type") as string).trim(),
+      disposition: dispositionValue,
+      status: statusFromDisposition(dispositionValue),
+      cva_score: (form.get("cva_score") as string).trim(),
+      lr_score: lrRaw ? Number(lrRaw) : null,
       marital_status: (form.get("marital_status") as MaritalStatus) || "",
       kids: kidsRaw ? Number(kidsRaw) : null,
       highest_qualification: form.get("highest_qualification") as string,
@@ -69,7 +84,10 @@ export default function EnquiryForm({
       itr: form.get("itr") as string,
       property_details: form.get("property_details") as string,
       notes: form.get("notes") as string,
-      status: form.get("status") as LeadStatus,
+      next_follow_up_at: showSchedule && scheduleRaw
+        ? new Date(scheduleRaw).toISOString()
+        : null,
+      whatsapp_reminders_enabled: form.get("whatsapp_reminders_enabled") === "on",
     };
 
     const url = isEdit ? `/api/leads/${leadId}` : "/api/leads";
@@ -157,15 +175,43 @@ export default function EnquiryForm({
         <div>
           <label className="mb-1 block text-sm font-medium text-slate-700">Disposition</label>
           <select
-            name="status"
-            defaultValue={initial?.status ?? "new"}
+            name="disposition"
+            value={disposition}
+            onChange={(e) => setDisposition(e.target.value as LeadDisposition)}
             className={inputClass}
           >
-            {LEAD_STATUSES.map((s) => (
-              <option key={s.value} value={s.value}>{s.label}</option>
+            {DISPOSITIONS.map((d) => (
+              <option key={d.value} value={d.value}>{d.label}</option>
             ))}
           </select>
         </div>
+        {showSchedule && (
+          <div className="sm:col-span-2">
+            <label className="mb-1 block text-sm font-medium text-slate-700">
+              When? *
+            </label>
+            <input
+              name="next_follow_up_at"
+              type="datetime-local"
+              required
+              defaultValue={
+                initial?.next_follow_up_at
+                  ? new Date(initial.next_follow_up_at).toISOString().slice(0, 16)
+                  : ""
+              }
+              className={inputClass}
+            />
+            <label className="mt-2 flex items-center gap-2 text-sm text-slate-600">
+              <input
+                type="checkbox"
+                name="whatsapp_reminders_enabled"
+                defaultChecked={initial?.whatsapp_reminders_enabled !== false}
+                className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+              />
+              Send WhatsApp reminders to admin &amp; agent
+            </label>
+          </div>
+        )}
       </Section>
 
       <Section title="Personal Details">
@@ -229,15 +275,18 @@ export default function EnquiryForm({
       <Section title="Visa Details">
         <div>
           <label className="mb-1 block text-sm font-medium text-slate-700">Service Type</label>
-          <select
-            name="visa_type"
-            defaultValue={initial?.visa_type ?? "visit"}
+          <input
+            name="service_type"
+            list="service-type-suggestions"
+            placeholder="e.g. Work Permit, Student Visa"
+            defaultValue={initial?.service_type ?? ""}
             className={inputClass}
-          >
-            {VISA_TYPES.map((v) => (
-              <option key={v.value} value={v.value}>{v.label}</option>
+          />
+          <datalist id="service-type-suggestions">
+            {SERVICE_TYPE_SUGGESTIONS.map((s) => (
+              <option key={s} value={s} />
             ))}
-          </select>
+          </datalist>
         </div>
         <div>
           <label className="mb-1 block text-sm font-medium text-slate-700">Country of Choice</label>
@@ -246,6 +295,19 @@ export default function EnquiryForm({
             defaultValue={initial?.country_of_choice}
             className={inputClass}
           />
+        </div>
+        <div>
+          <label className="mb-1 block text-sm font-medium text-slate-700">CVA Score</label>
+          <input
+            name="cva_score"
+            placeholder="Free text"
+            defaultValue={initial?.cva_score ?? ""}
+            className={inputClass}
+          />
+        </div>
+        <div>
+          <label className="mb-1 block text-sm font-medium text-slate-700">LR (1–5)</label>
+          <StarRating name="lr_score" value={lrScore} onChange={setLrScore} />
         </div>
         <div>
           <label className="mb-1 block text-sm font-medium text-slate-700">H. Qual</label>

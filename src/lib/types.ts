@@ -18,6 +18,16 @@ export type LeadStatus =
   | "won"
   | "lost";
 
+export type LeadDisposition =
+  | "no_answer"
+  | "follow_up"
+  | "visited"
+  | "lost"
+  | "converted"
+  | "documentation"
+  | "visa_in_process"
+  | "meeting_booked";
+
 export type UserRole = "admin" | "agent";
 export type AppRole = "super_admin" | "admin" | "agent";
 export type AuthMode = "mock" | "supabase";
@@ -83,6 +93,10 @@ export interface Lead {
   age: number | null;
   city: string;
   visa_type: VisaType;
+  service_type: string;
+  disposition: LeadDisposition;
+  cva_score: string;
+  lr_score: number | null;
   source: LeadSource;
   marital_status: MaritalStatus | "";
   kids: number | null;
@@ -132,6 +146,11 @@ export interface SessionUser {
   onboardingComplete: boolean;
 }
 
+export interface DashboardDateRange {
+  from: string;
+  to: string;
+}
+
 export interface DashboardStats {
   totalLeads: number;
   newEnquiries: number;
@@ -143,8 +162,11 @@ export interface DashboardStats {
   lostCount: number;
   bySource: Record<string, number>;
   byVisaType: Record<string, number>;
+  byServiceType: Record<string, number>;
   byStatus: Record<string, number>;
+  byDisposition: Record<string, number>;
   recentLeads: Lead[];
   dueFollowUps: Lead[];
   activeAgents: number;
+  dateRange: DashboardDateRange;
 }

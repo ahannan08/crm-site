@@ -1,9 +1,43 @@
-import type { LeadSource, LeadStatus, MaritalStatus, AgentStatus, VisaType } from "./types";
+import type {
+  LeadDisposition,
+  LeadSource,
+  LeadStatus,
+  MaritalStatus,
+  AgentStatus,
+  VisaType,
+} from "./types";
 
 export const VISA_TYPES: { value: VisaType; label: string }[] = [
   { value: "visit", label: "Visit Visa" },
   { value: "student", label: "Student Visa" },
   { value: "business", label: "Business Visa" },
+];
+
+/** Suggestions for free-text service type field */
+export const SERVICE_TYPE_SUGGESTIONS = [
+  "Visit Visa",
+  "Student Visa",
+  "Business Visa",
+  "Work Permit",
+  "PR / Immigration",
+  "Dependent Visa",
+  "Tourist Visa",
+];
+
+export const DISPOSITIONS: { value: LeadDisposition; label: string; color: string }[] = [
+  { value: "no_answer", label: "No Answer", color: "bg-slate-100 text-slate-700" },
+  { value: "follow_up", label: "Follow up", color: "bg-amber-100 text-amber-800" },
+  { value: "visited", label: "Visited", color: "bg-cyan-100 text-cyan-800" },
+  { value: "lost", label: "Lost", color: "bg-red-100 text-red-800" },
+  { value: "converted", label: "Converted", color: "bg-green-100 text-green-800" },
+  { value: "documentation", label: "Documentation", color: "bg-orange-100 text-orange-800" },
+  { value: "visa_in_process", label: "Visa in process", color: "bg-purple-100 text-purple-800" },
+  { value: "meeting_booked", label: "Meeting Booked", color: "bg-indigo-100 text-indigo-800" },
+];
+
+export const DISPOSITIONS_REQUIRING_SCHEDULE: LeadDisposition[] = [
+  "follow_up",
+  "meeting_booked",
 ];
 
 export const LEAD_SOURCES: { value: LeadSource; label: string }[] = [
@@ -72,6 +106,40 @@ export function bucketSourceForDashboard(source: string): LeadSource {
 
 export function labelForVisaType(type: string): string {
   return VISA_TYPES.find((v) => v.value === type)?.label ?? type;
+}
+
+export function labelForServiceType(lead: { service_type?: string; visa_type?: string }): string {
+  if (lead.service_type?.trim()) return lead.service_type.trim();
+  return labelForVisaType(lead.visa_type ?? "visit");
+}
+
+export function labelForDisposition(disposition: string): string {
+  return DISPOSITIONS.find((d) => d.value === disposition)?.label ?? disposition;
+}
+
+export function dispositionColor(disposition: string): string {
+  return DISPOSITIONS.find((d) => d.value === disposition)?.color ?? "bg-gray-100 text-gray-800";
+}
+
+export function statusFromDisposition(disposition: LeadDisposition): LeadStatus {
+  if (disposition === "lost") return "lost";
+  if (disposition === "converted") return "won";
+  if (disposition === "no_answer") return "contacted";
+  if (disposition === "documentation") return "documents_pending";
+  if (disposition === "visa_in_process") return "applied";
+  return "interested";
+}
+
+export function isLeadClosed(lead: {
+  status: LeadStatus;
+  disposition?: LeadDisposition;
+}): boolean {
+  return (
+    lead.status === "won" ||
+    lead.status === "lost" ||
+    lead.disposition === "lost" ||
+    lead.disposition === "converted"
+  );
 }
 
 export function labelForStatus(status: string): string {

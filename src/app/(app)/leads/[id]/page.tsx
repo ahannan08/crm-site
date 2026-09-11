@@ -7,7 +7,13 @@ import ActivityLog from "@/components/ActivityLog";
 import WhatsAppButton from "@/components/WhatsAppButton";
 import { getSession } from "@/lib/auth";
 import { getLeadById, getActivities, getUsers, getUserById, stripPassword } from "@/lib/crm";
-import { labelForVisaType, labelForSource } from "@/lib/constants";
+import StarRating from "@/components/StarRating";
+import {
+  labelForServiceType,
+  labelForSource,
+  labelForDisposition,
+  dispositionColor,
+} from "@/lib/constants";
 
 export default async function LeadDetailPage({
   params,
@@ -51,9 +57,13 @@ export default async function LeadDetailPage({
         <div>
           <h1 className="text-2xl font-bold text-slate-900">{lead.name}</h1>
           <div className="mt-2 flex flex-wrap items-center gap-3 text-sm text-slate-500">
-            <span>{labelForVisaType(lead.visa_type)}</span>
+            <span>{labelForServiceType(lead)}</span>
             <span>·</span>
             <span>{labelForSource(lead.source)}</span>
+            <span>·</span>
+            <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${dispositionColor(lead.disposition)}`}>
+              {labelForDisposition(lead.disposition)}
+            </span>
             {assignedAgent && (
               <>
                 <span>·</span>
@@ -103,6 +113,9 @@ export default async function LeadDetailPage({
             ["Kids", lead.kids ?? "—"],
             ["Occupation", lead.occupation || "—"],
             ["Country", lead.country_of_choice || "—"],
+            ["Service Type", labelForServiceType(lead)],
+            ["CVA Score", lead.cva_score || "—"],
+            ["LR Score", lead.lr_score ? `${lead.lr_score}/5` : "—"],
             ["H. Qualification", lead.highest_qualification || "—"],
             ["Year Finished", lead.year_finished || "—"],
             ["Passport Expiry", lead.passport_expiry ? format(new Date(lead.passport_expiry), "dd MMM yyyy") : "—"],
@@ -116,6 +129,12 @@ export default async function LeadDetailPage({
             </div>
           ))}
         </dl>
+        {lead.lr_score && (
+          <div className="mt-4 border-t border-slate-100 pt-4">
+            <p className="mb-2 text-xs text-slate-500">LR Rating</p>
+            <StarRating name="lr_display" value={lead.lr_score} readOnly />
+          </div>
+        )}
         {(lead.travel_history || lead.refusals || lead.property_details || lead.notes) && (
           <div className="mt-4 space-y-3 border-t border-slate-100 pt-4">
             {lead.travel_history && (

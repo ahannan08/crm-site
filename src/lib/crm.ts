@@ -89,11 +89,19 @@ export async function createActivity(
   return supabaseCrm.createActivity(requireOrgId(session), leadId, userId, type, description);
 }
 
-export async function getDashboardStats(session: SessionUser) {
+export async function getDashboardStats(
+  session: SessionUser,
+  dateRange?: { from?: string; to?: string }
+) {
   if (isMockSession(session)) {
-    return mockDb.getDashboardStats(session.id, session.role);
+    return mockDb.getDashboardStats(session.id, session.role, dateRange);
   }
-  return supabaseCrm.getDashboardStats(requireOrgId(session), session.id, session.role);
+  return supabaseCrm.getDashboardStats(
+    requireOrgId(session),
+    session.id,
+    session.role,
+    dateRange
+  );
 }
 
 export interface CreateAgentResult {

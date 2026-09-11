@@ -4,7 +4,9 @@ import { Mail, Phone } from "lucide-react";
 import {
   labelForSource,
   labelForStatus,
-  labelForVisaType,
+  labelForServiceType,
+  labelForDisposition,
+  dispositionColor,
   statusColor,
   agentStatusColor,
   labelForAgentStatus,
@@ -104,11 +106,11 @@ export default function AgentProfileView({
                       </a>
                     </td>
                     <td className="px-4 py-3 text-slate-600">{lead.city || "—"}</td>
-                    <td className="px-4 py-3 text-slate-600">{labelForVisaType(lead.visa_type)}</td>
+                    <td className="px-4 py-3 text-slate-600">{labelForServiceType(lead)}</td>
                     <td className="px-4 py-3 text-slate-600">{labelForSource(lead.source)}</td>
                     <td className="px-4 py-3">
-                      <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${statusColor(lead.status)}`}>
-                        {labelForStatus(lead.status)}
+                      <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${dispositionColor(lead.disposition)}`}>
+                        {labelForDisposition(lead.disposition)}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-slate-500">

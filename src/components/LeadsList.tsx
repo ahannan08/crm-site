@@ -8,10 +8,11 @@ import {
   VISA_TYPES,
   LEAD_SOURCES,
   LEAD_STATUSES,
-  labelForVisaType,
+  labelForServiceType,
   labelForSource,
-  labelForStatus,
-  statusColor,
+  labelForDisposition,
+  dispositionColor,
+  DISPOSITIONS,
 } from "@/lib/constants";
 import type { Lead, User } from "@/lib/types";
 import { format } from "date-fns";
@@ -23,13 +24,13 @@ export default function LeadsList() {
   const [search, setSearch] = useState("");
   const [visaType, setVisaType] = useState("");
   const [source, setSource] = useState("");
-  const [status, setStatus] = useState("");
+  const [disposition, setDisposition] = useState("");
   const [period, setPeriod] = useState("");
   const [loading, setLoading] = useState(true);
   const [role, setRole] = useState<string>("agent");
 
   useEffect(() => {
-    setStatus(searchParams.get("status") ?? "");
+    setDisposition(searchParams.get("disposition") ?? searchParams.get("status") ?? "");
     setPeriod(searchParams.get("period") ?? "");
   }, [searchParams]);
 
@@ -38,7 +39,7 @@ export default function LeadsList() {
     if (search) params.set("search", search);
     if (visaType) params.set("visa_type", visaType);
     if (source) params.set("source", source);
-    if (status) params.set("status", status);
+    if (disposition) params.set("disposition", disposition);
     if (period) params.set("period", period);
 
     setLoading(true);
@@ -50,7 +51,7 @@ export default function LeadsList() {
         if (data.role) setRole(data.role);
         setLoading(false);
       });
-  }, [search, visaType, source, status, period]);
+  }, [search, visaType, source, disposition, period]);
 
   function getAgentName(id: string | null) {
     if (!id) return "—";
@@ -59,8 +60,8 @@ export default function LeadsList() {
 
   const baseTitle = role === "agent" ? "My Leads" : "All Leads";
   const filterLabel =
-    status
-      ? `${labelForStatus(status)}${role === "admin" ? " Leads" : ""}`
+    disposition
+      ? `${DISPOSITIONS.find((d) => d.value === disposition)?.label ?? disposition}${role === "admin" ? " Leads" : ""}`
       : period === "week"
         ? "This Week"
         : period === "month"
@@ -116,16 +117,16 @@ export default function LeadsList() {
           ))}
         </select>
         <select
-          value={status}
-          onChange={(e) => setStatus(e.target.value)}
+          value={disposition}
+          onChange={(e) => setDisposition(e.target.value)}
           className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
         >
-          <option value="">All Statuses</option>
-          {LEAD_STATUSES.map((s) => (
+          <option value="">All Dispositions</option>
+          {DISPOSITIONS.map((s) => (
             <option key={s.value} value={s.value}>{s.label}</option>
           ))}
         </select>
-        {(status || period) && (
+        {(disposition || period) && (
           <Link
             href="/leads"
             className="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-600 hover:bg-slate-50"
@@ -146,9 +147,9 @@ export default function LeadsList() {
               <tr>
                 <th className="px-4 py-3 text-left font-medium text-slate-600">Name</th>
                 <th className="px-4 py-3 text-left font-medium text-slate-600">Phone</th>
-                <th className="px-4 py-3 text-left font-medium text-slate-600">Visa</th>
+                <th className="px-4 py-3 text-left font-medium text-slate-600">Service</th>
                 <th className="px-4 py-3 text-left font-medium text-slate-600">Source</th>
-                <th className="px-4 py-3 text-left font-medium text-slate-600">Status</th>
+                <th className="px-4 py-3 text-left font-medium text-slate-600">Disposition</th>
                 <th className="px-4 py-3 text-left font-medium text-slate-600">Assigned</th>
                 <th className="px-4 py-3 text-left font-medium text-slate-600">Created</th>
                 <th className="px-4 py-3"></th>
@@ -168,11 +169,11 @@ export default function LeadsList() {
                       {lead.phone}
                     </a>
                   </td>
-                  <td className="px-4 py-3 text-slate-600">{labelForVisaType(lead.visa_type)}</td>
+                  <td className="px-4 py-3 text-slate-600">{labelForServiceType(lead)}</td>
                   <td className="px-4 py-3 text-slate-600">{labelForSource(lead.source)}</td>
                   <td className="px-4 py-3">
-                    <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${statusColor(lead.status)}`}>
-                      {labelForStatus(lead.status)}
+                    <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${dispositionColor(lead.disposition)}`}>
+                      {labelForDisposition(lead.disposition)}
                     </span>
                   </td>
                   <td className="px-4 py-3 text-slate-600">{getAgentName(lead.assigned_to)}</td>
