@@ -45,7 +45,13 @@ export default function AgentProfileView({
             {labelForAgentStatus(agent.agent_status ?? "active")}
           </span>
         )}
-        <div className="mt-4 grid gap-4 sm:grid-cols-3">
+        <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div>
+            <p className="text-xs text-slate-500">Designation</p>
+            <p className="mt-1 text-sm font-medium text-slate-900">
+              {agent.designation || "—"}
+            </p>
+          </div>
           <div>
             <p className="text-xs text-slate-500">Email</p>
             <p className="mt-1 flex items-center gap-1 text-sm font-medium text-slate-900">
@@ -58,6 +64,14 @@ export default function AgentProfileView({
             <p className="mt-1 flex items-center gap-1 text-sm font-medium text-slate-900">
               <Phone className="h-4 w-4 text-slate-400" />
               {agent.phone || "—"}
+            </p>
+          </div>
+          <div>
+            <p className="text-xs text-slate-500">Last Login</p>
+            <p className="mt-1 text-sm font-medium text-slate-900">
+              {agent.last_login_at
+                ? format(new Date(agent.last_login_at), "dd MMM yyyy, h:mm a")
+                : "—"}
             </p>
           </div>
           <div>

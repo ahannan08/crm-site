@@ -2,7 +2,7 @@
 -- Run in Supabase SQL editor after creating your project
 
 create type app_role as enum ('super_admin', 'admin', 'agent');
-create type agent_status as enum ('active', 'inactive');
+create type agent_status as enum ('active', 'inactive', 'deleted');
 create type registration_status as enum ('pending', 'approved', 'rejected');
 create type visa_type as enum ('visit', 'student', 'business');
 create type lead_source as enum ('meta', 'justdial', 'walk_in', 'google_ads', 'website', 'referral', 'other');
@@ -58,6 +58,8 @@ create table profiles (
   phone text not null default '',
   app_role app_role not null default 'agent',
   agent_status agent_status default 'active',
+  designation text not null default '',
+  last_login_at timestamptz,
   onboarding_complete boolean not null default false,
   joined_at timestamptz not null default now(),
   created_at timestamptz not null default now()

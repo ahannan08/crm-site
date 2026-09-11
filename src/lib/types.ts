@@ -33,7 +33,8 @@ export type AppRole = "super_admin" | "admin" | "agent";
 export type AuthMode = "mock" | "supabase";
 export type RegistrationStatus = "pending" | "approved" | "rejected";
 
-export type AgentStatus = "active" | "inactive";
+export type AgentStatus = "active" | "inactive" | "deleted";
+export type AgentStatusFilter = AgentStatus | "all";
 
 export type MaritalStatus = "single" | "married" | "divorced" | "widowed" | "other";
 
@@ -47,6 +48,8 @@ export interface User {
   password: string;
   role: UserRole;
   agent_status?: AgentStatus;
+  designation?: string;
+  last_login_at?: string | null;
   joined_at: string;
 }
 

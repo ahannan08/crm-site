@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { AGENT_STATUSES } from "@/lib/constants";
+import { AGENT_CREATABLE_STATUSES } from "@/lib/constants";
 import type { AgentStatus } from "@/lib/types";
 
 export default function CreateAgentForm() {
@@ -22,6 +22,7 @@ export default function CreateAgentForm() {
       phone: form.get("phone") as string,
       password: form.get("password") as string,
       agent_status: form.get("agent_status") as AgentStatus,
+      designation: form.get("designation") as string,
     };
 
     const res = await fetch("/api/agents", {
@@ -80,9 +81,17 @@ export default function CreateAgentForm() {
           </p>
         </div>
         <div>
+          <label className="mb-1 block text-sm font-medium text-slate-700">Designation</label>
+          <input
+            name="designation"
+            placeholder="e.g. Senior Visa Consultant"
+            className={inputClass}
+          />
+        </div>
+        <div>
           <label className="mb-1 block text-sm font-medium text-slate-700">Status</label>
           <select name="agent_status" defaultValue="active" className={inputClass}>
-            {AGENT_STATUSES.map((s) => (
+            {AGENT_CREATABLE_STATUSES.map((s) => (
               <option key={s.value} value={s.value}>{s.label}</option>
             ))}
           </select>

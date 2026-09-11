@@ -4,6 +4,7 @@ import type {
   LeadStatus,
   MaritalStatus,
   AgentStatus,
+  AgentStatusFilter,
   VisaType,
 } from "./types";
 
@@ -69,6 +70,17 @@ export const MARITAL_STATUSES: { value: MaritalStatus; label: string }[] = [
 export const AGENT_STATUSES: { value: AgentStatus; label: string; color: string }[] = [
   { value: "active", label: "Active", color: "bg-green-100 text-green-800" },
   { value: "inactive", label: "Inactive", color: "bg-slate-100 text-slate-600" },
+  { value: "deleted", label: "Deleted", color: "bg-red-100 text-red-700" },
+];
+
+/** Status options when creating or editing an agent (excludes deleted). */
+export const AGENT_CREATABLE_STATUSES = AGENT_STATUSES.filter((s) => s.value !== "deleted");
+
+export const AGENT_STATUS_FILTERS: { value: AgentStatusFilter; label: string }[] = [
+  { value: "active", label: "Active" },
+  { value: "inactive", label: "Inactive" },
+  { value: "deleted", label: "Deleted" },
+  { value: "all", label: "All" },
 ];
 
 export function agentStatusColor(status: string): string {

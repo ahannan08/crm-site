@@ -39,6 +39,7 @@ import type {
   UpdateLeadInput,
   AgentSummary,
 } from "../db";
+import type { AgentStatusFilter } from "../types";
 
 function mapProfileToUser(row: {
   id: string;
@@ -47,6 +48,8 @@ function mapProfileToUser(row: {
   phone: string;
   app_role: string;
   agent_status: string | null;
+  designation?: string | null;
+  last_login_at?: string | null;
   joined_at: string;
 }): User {
   return {
@@ -57,6 +60,8 @@ function mapProfileToUser(row: {
     password: "",
     role: (row.app_role === "admin" ? "admin" : "agent") as UserRole,
     agent_status: (row.agent_status ?? undefined) as AgentStatus | undefined,
+    designation: row.designation ?? "",
+    last_login_at: row.last_login_at ?? null,
     joined_at: row.joined_at,
   };
 }
@@ -188,7 +193,7 @@ export async function getUsers(orgId: string): Promise<User[]> {
   const admin = createAdminClient();
   const { data, error } = await admin
     .from("profiles")
-    .select("id, name, email, phone, app_role, agent_status, joined_at")
+    .select("id, name, email, phone, app_role, agent_status, designation, last_login_at, joined_at")
     .eq("organization_id", orgId)
     .in("app_role", ["admin", "agent"]);
 
@@ -200,7 +205,7 @@ export async function getUserById(orgId: string, id: string): Promise<User | und
   const admin = createAdminClient();
   const { data, error } = await admin
     .from("profiles")
-    .select("id, name, email, phone, app_role, agent_status, joined_at")
+    .select("id, name, email, phone, app_role, agent_status, designation, last_login_at, joined_at")
     .eq("organization_id", orgId)
     .eq("id", id)
     .maybeSingle();
@@ -209,15 +214,24 @@ export async function getUserById(orgId: string, id: string): Promise<User | und
   return data ? mapProfileToUser(data) : undefined;
 }
 
-export async function getAgents(orgId: string): Promise<AgentSummary[]> {
+export async function getAgents(
+  orgId: string,
+  statusFilter: AgentStatusFilter = "all"
+): Promise<AgentSummary[]> {
   const admin = createAdminClient();
+  let agentsQuery = admin
+    .from("profiles")
+    .select("id, name, email, phone, app_role, agent_status, designation, last_login_at, joined_at")
+    .eq("organization_id", orgId)
+    .eq("app_role", "agent");
+
+  if (statusFilter !== "all") {
+    agentsQuery = agentsQuery.eq("agent_status", statusFilter);
+  }
+
   const [{ data: agents, error: agentError }, { data: leads, error: leadError }] =
     await Promise.all([
-      admin
-        .from("profiles")
-        .select("id, name, email, phone, app_role, agent_status, joined_at")
-        .eq("organization_id", orgId)
-        .eq("app_role", "agent"),
+      agentsQuery,
       admin.from("leads").select("assigned_to").eq("organization_id", orgId),
     ]);
 
@@ -452,6 +466,16 @@ export async function getDashboardStats(
   };
 }
 
+export async function updateLastLogin(userId: string): Promise<void> {
+  const admin = createAdminClient();
+  const { error } = await admin
+    .from("profiles")
+    .update({ last_login_at: new Date().toISOString() })
+    .eq("id", userId);
+
+  if (error) throw new Error(error.message);
+}
+
 export interface CreateAgentResult {
   user: User;
   emailSent: boolean;
@@ -488,6 +512,7 @@ export async function createAgent(orgId: string, input: CreateAgentInput): Promi
     phone: input.phone?.trim() ?? "",
     app_role: "agent",
     agent_status: input.agent_status ?? "active",
+    designation: input.designation?.trim() ?? "",
     onboarding_complete: true,
   });
 
@@ -509,6 +534,7 @@ export async function createAgent(orgId: string, input: CreateAgentInput): Promi
     phone: input.phone?.trim() ?? "",
     app_role: "agent",
     agent_status: input.agent_status ?? "active",
+    designation: input.designation?.trim() ?? "",
     joined_at: new Date().toISOString(),
   });
 

@@ -22,6 +22,7 @@ import type {
   User,
   VisaType,
   AgentStatus,
+  AgentStatusFilter,
   NotificationLog,
   DashboardDateRange,
 } from "./types";
@@ -56,6 +57,8 @@ function normalizeUser(raw: Partial<User> & Pick<User, "id" | "name" | "email" |
     password: raw.password,
     role: raw.role,
     agent_status: raw.role === "agent" ? (raw.agent_status ?? "active") : undefined,
+    designation: raw.designation ?? "",
+    last_login_at: raw.last_login_at ?? null,
     joined_at: raw.joined_at ?? new Date().toISOString(),
   };
 }
@@ -134,10 +137,14 @@ export interface AgentSummary extends Omit<User, "password"> {
   leadCount: number;
 }
 
-export function getAgents(): AgentSummary[] {
+export function getAgents(statusFilter: AgentStatusFilter = "all"): AgentSummary[] {
   const db = ensureDb();
   return db.users
-    .filter((u) => u.role === "agent")
+    .filter((u) => {
+      if (u.role !== "agent") return false;
+      if (statusFilter === "all") return true;
+      return (u.agent_status ?? "active") === statusFilter;
+    })
     .map(({ password: _, ...user }) => ({
       ...user,
       leadCount: db.leads.filter((l) => l.assigned_to === user.id).length,
@@ -158,6 +165,15 @@ export interface CreateAgentInput {
   phone?: string;
   password: string;
   agent_status?: AgentStatus;
+  designation?: string;
+}
+
+export function updateLastLogin(userId: string): void {
+  const db = ensureDb();
+  const user = db.users.find((u) => u.id === userId);
+  if (!user) return;
+  user.last_login_at = new Date().toISOString();
+  saveDb(db);
 }
 
 export function createAgent(input: CreateAgentInput): User {
@@ -173,6 +189,7 @@ export function createAgent(input: CreateAgentInput): User {
     password: input.password,
     role: "agent",
     agent_status: input.agent_status ?? "active",
+    designation: input.designation?.trim() ?? "",
     joined_at: new Date().toISOString(),
   });
   db.users.push(agent);

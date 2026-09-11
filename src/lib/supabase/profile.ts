@@ -6,7 +6,7 @@ export interface ProfileRow {
   name: string;
   email: string;
   app_role: AppRole;
-  agent_status: "active" | "inactive" | null;
+  agent_status: "active" | "inactive" | "deleted" | null;
   onboarding_complete: boolean;
 }
 

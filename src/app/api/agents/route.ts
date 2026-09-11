@@ -11,7 +11,7 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json();
-  const { name, email, phone, password, agent_status } = body;
+  const { name, email, phone, password, agent_status, designation } = body;
 
   if (!name?.trim() || !email?.trim() || !password?.trim()) {
     return NextResponse.json(
@@ -27,6 +27,7 @@ export async function POST(request: NextRequest) {
       phone: phone?.trim(),
       password: password.trim(),
       agent_status: (agent_status as AgentStatus) || "active",
+      designation: designation?.trim(),
     });
     return NextResponse.json(
       {

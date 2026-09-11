@@ -1,7 +1,7 @@
 import * as mockDb from "./db";
 import * as supabaseCrm from "./supabase/crm-store";
 import { isMockSession } from "./mock-auth";
-import type { SessionUser, User } from "./types";
+import type { AgentStatusFilter, SessionUser, User } from "./types";
 
 export type {
   CreateAgentInput,
@@ -35,9 +35,17 @@ export async function getUserById(session: SessionUser, id: string) {
   return supabaseCrm.getUserById(requireOrgId(session), id);
 }
 
-export async function getAgents(session: SessionUser) {
-  if (isMockSession(session)) return mockDb.getAgents();
-  return supabaseCrm.getAgents(requireOrgId(session));
+export async function getAgents(session: SessionUser, statusFilter: AgentStatusFilter = "all") {
+  if (isMockSession(session)) return mockDb.getAgents(statusFilter);
+  return supabaseCrm.getAgents(requireOrgId(session), statusFilter);
+}
+
+export async function recordLogin(userId: string, session: SessionUser) {
+  if (isMockSession(session)) {
+    mockDb.updateLastLogin(userId);
+    return;
+  }
+  await supabaseCrm.updateLastLogin(userId);
 }
 
 export async function getAgentLeads(session: SessionUser, agentId: string) {
