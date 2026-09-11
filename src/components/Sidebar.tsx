@@ -10,6 +10,7 @@ import {
   UserCircle,
   Ticket,
   FileText,
+  CalendarDays,
   type LucideIcon,
 } from "lucide-react";
 import type { SessionUser } from "@/lib/types";
@@ -19,6 +20,7 @@ import {
   isLeadSectionActive,
 } from "@/lib/lead-nav";
 import { documentSubItems, isDocumentSectionActive } from "@/lib/document-nav";
+import { calendarSubItems, isCalendarSectionActive } from "@/lib/calendar-nav";
 import SidebarNavSection from "@/components/SidebarNavSection";
 
 const adminNav = [
@@ -90,6 +92,15 @@ export default function Sidebar({ user }: { user: SessionUser }) {
           filled
           subItems={documentSubItems}
           sectionActive={isDocumentSectionActive(pathname)}
+          pathname={pathname}
+        />
+
+        <SidebarNavSection
+          label="Calendar"
+          icon={CalendarDays}
+          filled
+          subItems={calendarSubItems}
+          sectionActive={isCalendarSectionActive(pathname)}
           pathname={pathname}
         />
 
