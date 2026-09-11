@@ -19,6 +19,11 @@ export async function GET(request: NextRequest) {
     status: (params.get("status") as LeadStatus) || undefined,
     disposition: (params.get("disposition") as LeadDisposition) || undefined,
     assigned_to: params.get("assigned_to") || undefined,
+    service_type: params.get("service_type") || undefined,
+    follow_up:
+      params.get("follow_up") === "due" || params.get("follow_up") === "scheduled"
+        ? params.get("follow_up") as "due" | "scheduled"
+        : undefined,
     search: params.get("search") || undefined,
     period,
   };

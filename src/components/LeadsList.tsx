@@ -58,7 +58,7 @@ export default function LeadsList() {
     return users.find((u) => u.id === id)?.name ?? "—";
   }
 
-  const baseTitle = role === "agent" ? "My Leads" : "All Leads";
+  const baseTitle = role === "agent" ? "My Leads" : "Lead";
   const filterLabel =
     disposition
       ? `${DISPOSITIONS.find((d) => d.value === disposition)?.label ?? disposition}${role === "admin" ? " Leads" : ""}`

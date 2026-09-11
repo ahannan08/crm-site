@@ -17,6 +17,12 @@ import {
   statusFromDisposition,
 } from "../constants";
 import { computeLeadsByMonth, computeOpenLeadsMetrics } from "../open-leads-stats";
+import {
+  summarizeLeadCounts,
+  matchesTransferLeadType,
+  type LeadCountSummary,
+  type TransferLeadType,
+} from "../lead-utils";
 import type {
   Activity,
   ActivityType,
@@ -164,6 +170,18 @@ function applyLeadFilters(leads: Lead[], filters: LeadFilters): Lead[] {
   }
   if (filters.assigned_to) {
     result = result.filter((l) => l.assigned_to === filters.assigned_to);
+  }
+  if (filters.service_type) {
+    result = result.filter((l) => l.service_type === filters.service_type);
+  }
+  if (filters.follow_up === "due") {
+    const now = new Date();
+    result = result.filter(
+      (l) => l.next_follow_up_at && !isLeadClosed(l) && new Date(l.next_follow_up_at) <= now
+    );
+  }
+  if (filters.follow_up === "scheduled") {
+    result = result.filter((l) => l.next_follow_up_at && !isLeadClosed(l));
   }
   if (filters.search) {
     const q = filters.search.toLowerCase();
@@ -330,6 +348,96 @@ export async function getActivities(orgId: string, leadId: string): Promise<Acti
 
   if (error) throw new Error(error.message);
   return (data ?? []) as Activity[];
+}
+
+export async function getLeadCountsForUser(
+  orgId: string,
+  userId: string
+): Promise<LeadCountSummary> {
+  const leads = await getLeads(orgId, { assigned_to: userId });
+  return summarizeLeadCounts(leads);
+}
+
+export interface TransferLeadsInput {
+  from_user_id: string;
+  to_user_id: string;
+  service_type?: string;
+  lead_type: TransferLeadType;
+  reason: string;
+  actor_user_id: string;
+}
+
+export async function transferLeads(orgId: string, input: TransferLeadsInput): Promise<number> {
+  const admin = createAdminClient();
+  let leads = await getLeads(orgId, { assigned_to: input.from_user_id });
+  if (input.service_type) {
+    leads = leads.filter((l) => l.service_type === input.service_type);
+  }
+  leads = leads.filter((l) => matchesTransferLeadType(l, input.lead_type));
+  if (leads.length === 0) return 0;
+
+  const ids = leads.map((l) => l.id);
+  const now = new Date().toISOString();
+  const { error } = await admin
+    .from("leads")
+    .update({ assigned_to: input.to_user_id, updated_at: now })
+    .eq("organization_id", orgId)
+    .in("id", ids);
+
+  if (error) throw new Error(error.message);
+
+  await Promise.all(
+    ids.map((leadId) =>
+      createActivity(orgId, leadId, input.actor_user_id, "note", `Lead transferred: ${input.reason}`)
+    )
+  );
+
+  return ids.length;
+}
+
+export interface BulkUpdateLeadsInput {
+  lead_ids: string[];
+  disposition?: LeadDisposition;
+  status?: LeadStatus;
+  assigned_to?: string | null;
+  source?: LeadSource;
+  actor_user_id: string;
+}
+
+export async function bulkUpdateLeads(
+  orgId: string,
+  input: BulkUpdateLeadsInput
+): Promise<number> {
+  const admin = createAdminClient();
+  const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
+  if (input.disposition !== undefined) {
+    patch.disposition = input.disposition;
+    patch.status = input.status ?? statusFromDisposition(input.disposition);
+  } else if (input.status !== undefined) {
+    patch.status = input.status;
+  }
+  if (input.assigned_to !== undefined) patch.assigned_to = input.assigned_to;
+  if (input.source !== undefined) patch.source = input.source;
+
+  if (Object.keys(patch).length <= 1) return 0;
+
+  const { data, error } = await admin
+    .from("leads")
+    .update(patch)
+    .eq("organization_id", orgId)
+    .in("id", input.lead_ids)
+    .select("id");
+
+  if (error) throw new Error(error.message);
+  const updatedIds = (data ?? []).map((row) => row.id as string);
+
+  await Promise.all(
+    updatedIds.map((leadId) =>
+      createActivity(orgId, leadId, input.actor_user_id, "note", "Bulk lead update applied")
+    )
+  );
+
+  return updatedIds.length;
 }
 
 export async function createActivity(

@@ -79,6 +79,29 @@ export async function updateLead(
   return supabaseCrm.updateLead(requireOrgId(session), id, input);
 }
 
+export async function getLeadCountsForUser(session: SessionUser, userId: string) {
+  if (isMockSession(session)) return mockDb.getLeadCountsForUser(userId);
+  return supabaseCrm.getLeadCountsForUser(requireOrgId(session), userId);
+}
+
+export async function transferLeads(
+  session: SessionUser,
+  input: Omit<mockDb.TransferLeadsInput, "actor_user_id">
+) {
+  const payload = { ...input, actor_user_id: session.id };
+  if (isMockSession(session)) return mockDb.transferLeads(payload);
+  return supabaseCrm.transferLeads(requireOrgId(session), payload);
+}
+
+export async function bulkUpdateLeads(
+  session: SessionUser,
+  input: Omit<mockDb.BulkUpdateLeadsInput, "actor_user_id">
+) {
+  const payload = { ...input, actor_user_id: session.id };
+  if (isMockSession(session)) return mockDb.bulkUpdateLeads(payload);
+  return supabaseCrm.bulkUpdateLeads(requireOrgId(session), payload);
+}
+
 export async function getActivities(session: SessionUser, leadId: string) {
   if (isMockSession(session)) return mockDb.getActivities(leadId);
   return supabaseCrm.getActivities(requireOrgId(session), leadId);

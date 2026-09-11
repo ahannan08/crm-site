@@ -35,6 +35,12 @@ import {
   statusFromDisposition,
 } from "./constants";
 import { computeLeadsByMonth, computeOpenLeadsMetrics } from "./open-leads-stats";
+import {
+  summarizeLeadCounts,
+  matchesTransferLeadType,
+  type TransferLeadType,
+  type LeadCountSummary,
+} from "./lead-utils";
 
 const DATA_DIR = join(process.cwd(), "data");
 const DB_PATH = join(DATA_DIR, "db.json");
@@ -203,10 +209,12 @@ export interface LeadFilters {
   source?: LeadSource;
   status?: LeadStatus;
   assigned_to?: string;
+  service_type?: string;
   search?: string;
   mine?: string;
   period?: "week" | "month";
   organization_id?: string;
+  follow_up?: "due" | "scheduled";
 }
 
 export function getLeads(filters: LeadFilters = {}): Lead[] {
@@ -233,6 +241,18 @@ export function getLeads(filters: LeadFilters = {}): Lead[] {
   }
   if (filters.assigned_to) {
     leads = leads.filter((l) => l.assigned_to === filters.assigned_to);
+  }
+  if (filters.service_type) {
+    leads = leads.filter((l) => l.service_type === filters.service_type);
+  }
+  if (filters.follow_up === "due") {
+    const now = new Date();
+    leads = leads.filter(
+      (l) => l.next_follow_up_at && !isLeadClosed(l) && new Date(l.next_follow_up_at) <= now
+    );
+  }
+  if (filters.follow_up === "scheduled") {
+    leads = leads.filter((l) => l.next_follow_up_at && !isLeadClosed(l));
   }
   if (filters.search) {
     const q = filters.search.toLowerCase();
@@ -398,6 +418,78 @@ export function getActivities(leadId: string): Activity[] {
       (a, b) =>
         new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
     );
+}
+
+export function getLeadCountsForUser(userId: string): LeadCountSummary {
+  return summarizeLeadCounts(getLeads({ assigned_to: userId }));
+}
+
+export interface TransferLeadsInput {
+  from_user_id: string;
+  to_user_id: string;
+  service_type?: string;
+  lead_type: TransferLeadType;
+  reason: string;
+  actor_user_id: string;
+}
+
+export function transferLeads(input: TransferLeadsInput): number {
+  const db = ensureDb();
+  let leads = db.leads.filter((l) => l.assigned_to === input.from_user_id);
+  if (input.service_type) {
+    leads = leads.filter((l) => l.service_type === input.service_type);
+  }
+  leads = leads.filter((l) => matchesTransferLeadType(l, input.lead_type));
+
+  const now = new Date().toISOString();
+  let count = 0;
+  for (const lead of leads) {
+    const index = db.leads.findIndex((l) => l.id === lead.id);
+    if (index === -1) continue;
+    db.leads[index] = {
+      ...db.leads[index],
+      assigned_to: input.to_user_id,
+      updated_at: now,
+    };
+    db.activities.push({
+      id: randomUUID(),
+      lead_id: lead.id,
+      user_id: input.actor_user_id,
+      type: "note",
+      description: `Lead transferred: ${input.reason}`,
+      created_at: now,
+    });
+    count++;
+  }
+  if (count > 0) saveDb(db);
+  return count;
+}
+
+export interface BulkUpdateLeadsInput {
+  lead_ids: string[];
+  disposition?: LeadDisposition;
+  status?: LeadStatus;
+  assigned_to?: string | null;
+  source?: LeadSource;
+  actor_user_id: string;
+}
+
+export function bulkUpdateLeads(input: BulkUpdateLeadsInput): number {
+  let count = 0;
+  for (const id of input.lead_ids) {
+    const patch: UpdateLeadInput = {};
+    if (input.disposition !== undefined) patch.disposition = input.disposition;
+    if (input.status !== undefined) patch.status = input.status;
+    if (input.assigned_to !== undefined) patch.assigned_to = input.assigned_to;
+    if (input.source !== undefined) patch.source = input.source;
+    if (Object.keys(patch).length === 0) continue;
+    const updated = updateLead(id, patch);
+    if (updated) {
+      createActivity(id, input.actor_user_id, "note", "Bulk lead update applied");
+      count++;
+    }
+  }
+  return count;
 }
 
 export function createActivity(
