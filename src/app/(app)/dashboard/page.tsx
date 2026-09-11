@@ -6,6 +6,7 @@ import WonLostCard from "@/components/WonLostCard";
 import WhatsAppButton from "@/components/WhatsAppButton";
 import BarChart from "@/components/BarChart";
 import DashboardDateFilter from "@/components/DashboardDateFilter";
+import MonthlyLeadsReportCard from "@/components/MonthlyLeadsReportCard";
 import {
   labelForSource,
   labelForDisposition,
@@ -24,6 +25,7 @@ import {
   Inbox,
   Phone,
   UserCheck,
+  FolderOpen,
 } from "lucide-react";
 
 export default async function DashboardPage({
@@ -64,8 +66,15 @@ export default async function DashboardPage({
         </Link>
       </div>
 
-      <div className="mb-3 grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-5">
+      <div className="mb-3 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
         <StatCard label="Total Leads" value={stats.totalLeads} icon={Users} href="/leads" />
+        <StatCard
+          label="Open Leads"
+          value={stats.openLeadsCount}
+          icon={FolderOpen}
+          accent="text-violet-600 bg-violet-50"
+          href="/leads"
+        />
         <StatCard
           label="New Enquiries"
           value={stats.newEnquiries}
@@ -137,6 +146,10 @@ export default async function DashboardPage({
           order={DISPOSITIONS.map((d) => d.value)}
           color="bg-amber-500"
         />
+      </div>
+
+      <div className="mb-8">
+        <MonthlyLeadsReportCard byMonth={stats.leadsByMonth} />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">

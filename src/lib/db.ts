@@ -33,6 +33,7 @@ import {
   labelForServiceType,
   statusFromDisposition,
 } from "./constants";
+import { computeLeadsByMonth, computeOpenLeadsMetrics } from "./open-leads-stats";
 
 const DATA_DIR = join(process.cwd(), "data");
 const DB_PATH = join(DATA_DIR, "db.json");
@@ -458,6 +459,9 @@ export function getDashboardStats(
     return isBefore(d, todayEnd);
   });
 
+  const { openLeadsCount, openLeadsByMonth } = computeOpenLeadsMetrics(allLeads);
+  const leadsByMonth = computeLeadsByMonth(allLeads);
+
   return {
     totalLeads: allLeads.length,
     newEnquiries: allLeads.filter((l) => l.status === "new").length,
@@ -490,6 +494,9 @@ export function getDashboardStats(
         new Date(b.next_follow_up_at!).getTime()
     ),
     activeAgents: getActiveAgentsCount(),
+    openLeadsCount,
+    openLeadsByMonth,
+    leadsByMonth,
     dateRange: range,
   };
 }

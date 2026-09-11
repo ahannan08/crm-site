@@ -16,6 +16,7 @@ import {
   labelForServiceType,
   statusFromDisposition,
 } from "../constants";
+import { computeLeadsByMonth, computeOpenLeadsMetrics } from "../open-leads-stats";
 import type {
   Activity,
   ActivityType,
@@ -410,6 +411,9 @@ export async function getDashboardStats(
     return isBefore(new Date(l.next_follow_up_at), todayEnd);
   });
 
+  const { openLeadsCount, openLeadsByMonth } = computeOpenLeadsMetrics(allLeads);
+  const leadsByMonth = computeLeadsByMonth(allLeads);
+
   return {
     totalLeads: allLeads.length,
     newEnquiries: allLeads.filter((l) => l.status === "new").length,
@@ -441,6 +445,9 @@ export async function getDashboardStats(
         new Date(a.next_follow_up_at!).getTime() - new Date(b.next_follow_up_at!).getTime()
     ),
     activeAgents: await getActiveAgentsCount(orgId),
+    openLeadsCount,
+    openLeadsByMonth,
+    leadsByMonth,
     dateRange: range,
   };
 }

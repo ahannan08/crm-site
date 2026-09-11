@@ -168,5 +168,8 @@ export interface DashboardStats {
   recentLeads: Lead[];
   dueFollowUps: Lead[];
   activeAgents: number;
+  openLeadsCount: number;
+  openLeadsByMonth: Record<string, number>;
+  leadsByMonth: Record<string, number>;
   dateRange: DashboardDateRange;
 }
