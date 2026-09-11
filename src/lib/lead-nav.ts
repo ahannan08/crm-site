@@ -1,10 +1,6 @@
-export interface LeadNavItem {
-  href: string;
-  label: string;
-  match: (path: string) => boolean;
-}
+import type { NavSubItem } from "./document-nav";
 
-export const adminLeadSubItems: LeadNavItem[] = [
+export const adminLeadSubItems: NavSubItem[] = [
   {
     href: "/leads/enquiries",
     label: "Enquiry",
@@ -32,7 +28,7 @@ export const adminLeadSubItems: LeadNavItem[] = [
   },
 ];
 
-export const agentLeadSubItems: LeadNavItem[] = [
+export const agentLeadSubItems: NavSubItem[] = [
   {
     href: "/leads/enquiries",
     label: "Enquiry",
